@@ -43,3 +43,6 @@ public/pagefind/
 .netlify/
 .vercel/
 *.tsbuildinfo
+
+# Gemini CLI files
+.gemini-clipboard
