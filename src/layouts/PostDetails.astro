@@ -117,22 +117,23 @@ const nextPost =
       <Content />
     </article>
 
-    <hr class="my-8 border-dashed" />
+    <div class="my-12">
+      <EditPost class="sm:hidden" {hideEditPost} {post} />
 
-    <EditPost class="sm:hidden" {hideEditPost} {post} />
-
-    <ul class="mt-4 mb-8 sm:my-8">
-      {tags.map(tag => <Tag tag={slugifyStr(tag)} tagName={tag} />)}
-    </ul>
+      <ul class="mt-4 mb-8 sm:my-8">
+        {tags.map(tag => <Tag tag={slugifyStr(tag)} tagName={tag} />)}
+      </ul>
+    </div>
 
     <BackToTopButton />
 
     <ShareLinks />
 
-    <hr class="my-6 border-dashed" />
-
     <!-- Previous/Next Post Buttons -->
-    <div data-pagefind-ignore class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+    <div
+      data-pagefind-ignore
+      class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2"
+    >
       {
         prevPost && (
           <a

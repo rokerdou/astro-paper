@@ -5,19 +5,19 @@
 
 :root,
 html[data-theme="light"] {
-  --background: #fdfdfd;
-  --foreground: #282728;
-  --accent: #006cac;
-  --muted: #e6e6e6;
-  --border: #ece9e9;
+  --background: #fafafa;
+  --foreground: #1f2937;
+  --accent: #6366f1;
+  --muted: #e5e7eb;
+  --border: #e2e8f0;
 }
 
 html[data-theme="dark"] {
-  --background: #212737;
-  --foreground: #eaedf3;
-  --accent: #ff6b01;
-  --muted: #343f60;
-  --border: #ab4b08;
+  --background: #0f172a;
+  --foreground: #f3f4f6;
+  --accent: #818cf8;
+  --muted: #1e293b;
+  --border: #334155;
 }
 
 @theme inline {
@@ -38,7 +38,7 @@ html[data-theme="dark"] {
     @apply overflow-y-scroll scroll-smooth;
   }
   body {
-    @apply flex min-h-svh flex-col bg-background font-mono text-foreground selection:bg-accent/75 selection:text-background;
+    @apply flex min-h-svh flex-col bg-background font-sans text-foreground selection:bg-accent/75 selection:text-background;
   }
   a,
   button {
@@ -55,7 +55,7 @@ html[data-theme="dark"] {
 }
 
 @utility max-w-app {
-  @apply max-w-3xl;
+  @apply max-w-4xl;
 }
 
 .active-nav {
