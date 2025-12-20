@@ -1,12 +1,12 @@
 ---
 import { getCollection } from "astro:content";
 import type { GetStaticPathsOptions } from "astro";
-import Main from "@/layouts/Main.astro";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Card from "@/components/Card.astro";
 import Pagination from "@/components/Pagination.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
 import getUniqueTags from "@/utils/getUniqueTags";
 import getPostsByTag from "@/utils/getPostsByTag";
 import { SITE } from "@/config";
@@ -33,18 +33,30 @@ const { page, tagName } = Astro.props;
 
 <Layout title={`Tag: ${tagName} | ${SITE.title}`}>
   <Header />
-  <Main
-    pageTitle={[`Tag:`, `${tagName}`]}
-    titleTransition={tag}
-    pageDesc={`All the articles with the tag "${tagName}".`}
-  >
-    <h1 slot="title" transition:name={tag}>{`Tag:${tag}`}</h1>
-    <ul>
-      {page.data.map(data => <Card {...data} />)}
-    </ul>
-  </Main>
+  <Breadcrumb />
+  <main id="main-content" class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    {/* 页面标题 */}
+    <div class="mb-8">
+      <h1 class="text-2xl font-semibold sm:text-3xl">
+        Tag: <span transition:name={tag} class="text-accent">{tagName}</span>
+      </h1>
+      <p class="mt-2 text-muted-foreground italic">
+        All the articles with the tag "{tagName}".
+      </p>
+    </div>
 
-  <Pagination {page} />
+    {/* 网格布局 */}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {page.data.map(data => <Card variant="h3" {...data} />)}
+    </div>
 
-  <Footer noMarginTop={page.lastPage > 1} />
+    {/* 分页 */}
+    {page.lastPage > 1 && (
+      <div class="mt-12">
+        <Pagination {page} />
+      </div>
+    )}
+  </main>
+
+  <Footer noMarginTop />
 </Layout>

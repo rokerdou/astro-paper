@@ -14,25 +14,33 @@ const { page } = Astro.props;
 
 {
   page.lastPage > 1 && (
-    <nav class="mt-auto mb-8 flex justify-center" aria-label="Pagination">
+    <nav class="flex items-center justify-center gap-4" aria-label="Pagination">
       <LinkButton
         disabled={!page.url.prev}
         href={page.url.prev as string}
-        class:list={["me-4 select-none", { "opacity-50": !page.url.prev }]}
+        class:list={[
+          "select-none inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-background hover:bg-accent/10 transition-colors",
+          { "opacity-50 cursor-not-allowed": !page.url.prev }
+        ]}
         ariaLabel="Previous"
       >
-        <IconArrowLeft class="inline-block rtl:rotate-180" />
+        <IconArrowLeft class="inline-block rtl:rotate-180" width={16} height={16} />
         Prev
       </LinkButton>
-      {page.currentPage} / {page.lastPage}
+      <span class="text-sm font-medium text-foreground">
+        {page.currentPage} / {page.lastPage}
+      </span>
       <LinkButton
         disabled={!page.url.next}
         href={page.url.next as string}
-        class:list={["ms-4 select-none", { "opacity-50": !page.url.next }]}
+        class:list={[
+          "select-none inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-background hover:bg-accent/10 transition-colors",
+          { "opacity-50 cursor-not-allowed": !page.url.next }
+        ]}
         ariaLabel="Next"
       >
         Next
-        <IconArrowRight class="inline-block rtl:rotate-180" />
+        <IconArrowRight class="inline-block rtl:rotate-180" width={16} height={16} />
       </LinkButton>
     </nav>
   )

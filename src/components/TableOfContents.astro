@@ -1,0 +1,105 @@
+---
+import type { MarkdownHeading } from "astro";
+
+export interface Props {
+  headings: MarkdownHeading[];
+}
+
+const { headings } = Astro.props;
+
+// 过滤掉 h1，只显示 h2 和 h3
+const toc = headings.filter(({ depth }) => depth > 1 && depth <= 3);
+---
+
+{toc.length > 0 && (
+  <nav class="toc-container hidden xl:block">
+    <div class="toc-wrapper sticky top-24 max-h-[calc(100vh-6rem)] overflow-y-auto">
+      <h2 class="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">
+        Table of Contents
+      </h2>
+      <ul class="toc-list space-y-2 text-sm">
+        {toc.map((heading) => (
+          <li
+            class:list={[
+              "toc-item",
+              {
+                "pl-0": heading.depth === 2,
+                "pl-4": heading.depth === 3,
+              },
+            ]}
+          >
+            <a
+              href={`#${heading.slug}`}
+              class="toc-link block py-1 text-muted-foreground hover:text-accent transition-colors border-l-2 border-transparent hover:border-accent pl-3 -ml-3"
+              data-heading-slug={heading.slug}
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </nav>
+)}
+
+<style>
+  .toc-link.active {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .toc-wrapper {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-muted) transparent;
+  }
+
+  .toc-wrapper::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .toc-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .toc-wrapper::-webkit-scrollbar-thumb {
+    background: var(--color-muted);
+    border-radius: 2px;
+  }
+</style>
+
+<script>
+  function initTOC() {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.getAttribute("id");
+          const tocLink = document.querySelector(
+            `.toc-link[data-heading-slug="${id}"]`
+          );
+
+          if (entry.isIntersecting) {
+            // Remove active class from all links
+            document.querySelectorAll(".toc-link").forEach((link) => {
+              link.classList.remove("active");
+            });
+            // Add active class to current link
+            tocLink?.classList.add("active");
+          }
+        });
+      },
+      {
+        rootMargin: "-100px 0px -66%",
+        threshold: 1,
+      }
+    );
+
+    // Observe all headings
+    document.querySelectorAll("article h2, article h3").forEach((heading) => {
+      observer.observe(heading);
+    });
+  }
+
+  // Initialize on page load
+  document.addEventListener("astro:page-load", initTOC);
+</script>
