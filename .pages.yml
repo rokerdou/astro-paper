@@ -31,6 +31,9 @@ content:
         type: code
         options:
             language: markdown
+      - name: body
+        label: Body
+        type: rich-text
 
   - name: site-settings
     label: Site Settings
