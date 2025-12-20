@@ -52,5 +52,5 @@ content:
         description: Image used in the social preview on social networks (e.g. Facebook, Twitter...)
 
 media:
-  input: public/media
-  output: /media
+  input: public/
+  output: /public
