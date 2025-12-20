@@ -1,8 +1,8 @@
 content:
   - name: blog
     label: Blog
-    path: src/content/blog
-    filename: '{year}-{month}-{day}-{fields.title}.md'
+    path: /src/data/blog
+    filename: '{fields.title}.md'
     type: collection
     view:
       fields: [heroImage, title, pubDate]
