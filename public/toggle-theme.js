@@ -56,7 +56,7 @@ window.onload = () => {
 
     // now this script can find and listen for clicks on the control
     document.querySelector("#theme-btn")?.addEventListener("click", () => {
-      const themes = ["light", "dark", "sepia", "dblog", "clean-white"];
+      const themes = ["light", "dark", "clean-white"];
       const nextIndex = (themes.indexOf(themeValue) + 1) % themes.length;
       themeValue = themes[nextIndex];
       setPreference();

@@ -5,39 +5,21 @@
 
 :root,
 html[data-theme="light"] {
-  --background: #fafafa;
-  --foreground: #1f2937;
-  --accent: #6366f1;
-  --muted: #e5e7eb;
+  --background: #f9fafb;
+  --foreground: #111827;
+  --accent: #0066cc;
+  --muted: #f3f4f6;
   --muted-foreground: #6b7280;
-  --border: #e2e8f0;
+  --border: #e5e7eb;
 }
 
 html[data-theme="dark"] {
-  --background: #0f172a;
-  --foreground: #f3f4f6;
-  --accent: #818cf8;
-  --muted: #1e293b;
+  --background: #121212;
+  --foreground: #e5e7eb;
+  --accent: #60a5fa;
+  --muted: #1e1e1e;
   --muted-foreground: #9ca3af;
-  --border: #334155;
-}
-
-html[data-theme="sepia"] {
-  --background: #fdf6e3;
-  --foreground: #5c6b73;
-  --accent: #d97706;
-  --muted: #e7e5e4;
-  --muted-foreground: #78716c;
-  --border: #d6d3d1;
-}
-
-html[data-theme="dblog"] {
-  --background: #ffffff;
-  --foreground: #333333;
-  --accent: #4a90e2;
-  --muted: #f0f0f0;
-  --muted-foreground: #666666;
-  --border: #e0e0e0;
+  --border: #374151;
 }
 
 @theme inline {
@@ -60,113 +42,7 @@ html[data-theme="dblog"] {
   }
   body {
     @apply flex min-h-svh flex-col bg-background font-sans text-foreground selection:bg-accent/75 selection:text-background;
-  }
-  /* D-Blog Layout Overrides */
-  html[data-theme="dblog"] body {
-    @apply sm:block; /* Reset flex col for desktop if needed, or manage via margins */
-  }
-
-  html[data-theme="dblog"] h1,
-  html[data-theme="dblog"] h2,
-  html[data-theme="dblog"] h3,
-  html[data-theme="dblog"] #post-title {
-    @apply font-bold relative;
-  }
-  
-  /* Pink Hash for Headers */
-  html[data-theme="dblog"] h1::before,
-  html[data-theme="dblog"] h2::before,
-  html[data-theme="dblog"] h3::before,
-  html[data-theme="dblog"] #post-title::before {
-    content: "# ";
-    color: #d0021b;
-    margin-right: 0.25em;
-  }
-  
-  /* Sidebar Layout for Desktop */
-  @media (min-width: 640px) {
-    html[data-theme="dblog"] header {
-      @apply fixed left-0 top-0 h-screen w-64 border-r border-border bg-background overflow-y-auto z-40;
-      align-items: flex-start;
-    }
-    
-    html[data-theme="dblog"] header #nav-container {
-      @apply flex-col w-full h-full justify-start p-0;
-      max-width: none;
-    }
-    
-    html[data-theme="dblog"] header #top-nav-wrap {
-      @apply flex-col items-start w-full h-full p-0;
-    }
-    
-    html[data-theme="dblog"] header #top-nav-wrap > a {
-      @apply w-full p-6 text-xl border-b border-border text-foreground block;
-    }
-    
-    html[data-theme="dblog"] header nav {
-      @apply flex-col w-full items-start space-x-0 mt-0 flex-1;
-    }
-    
-    html[data-theme="dblog"] header ul#menu-items {
-      @apply flex-col w-full gap-0 flex;
-    }
-    
-    html[data-theme="dblog"] header ul#menu-items li {
-      @apply w-full col-span-2;
-    }
-    
-    html[data-theme="dblog"] header ul#menu-items li a {
-      @apply block w-full px-6 py-4 text-left border-b border-muted transition-colors hover:bg-muted/50;
-      font-weight: normal;
-    }
-
-    html[data-theme="dblog"] header ul#menu-items li a.active-nav {
-      @apply bg-muted text-accent border-r-4 border-r-accent decoration-0;
-    }
-
-    /* Adjust main content and footer to sit to the right */
-    html[data-theme="dblog"] main,
-    html[data-theme="dblog"] footer {
-      @apply ml-64 w-auto max-w-none px-8;
-    }
-    html[data-theme="dblog"] footer {
-      @apply w-[calc(100%-16rem)]; /* Fix footer width calculation */
-    }
-
-    /* Main content area should simply be shifted left and have internal padding,
-       taking up the full remaining width. */
-    html[data-theme="dblog"] main,
-    html[data-theme="dblog"] footer {
-      @apply ml-64 px-8;
-      width: calc(100% - 16rem); /* Explicitly set width to fill remaining space */
-      max-width: none; /* Ensure it doesn't get limited by a default max-w-app on main */
-      /* Remove any explicit mx-auto or mr-auto from main/footer */
-    }
-
-    /* Now, for the *content inside* main and sections, apply max-width and auto margins to center it */
-    html[data-theme="dblog"] #main-content > *,
-    html[data-theme="dblog"] #hero,
-    html[data-theme="dblog"] #featured,
-    html[data-theme="dblog"] #recent-posts,
-    html[data-theme="dblog"] article.app-prose {
-      @apply max-w-6xl mx-auto; /* Center content elements within the wider main area */
-    }
-    
-    /* Stronger override for PostDetails page specifically */
-    html[data-theme="dblog"] main#main-content {
-      max-width: none !important; /* Override max-w-app class on main */
-      width: calc(100% - 16rem);
-      margin-left: 16rem !important; /* Force margin-left to prevent overlap, overriding mx-auto */
-      margin-right: 0 !important; /* Reset right margin */
-      padding-right: 2rem; /* Add some right padding */
-      box-sizing: border-box;
-    }
-
-    html[data-theme="dblog"] article.app-prose {
-      max-width: 100% !important; /* Allow article to fill container but not overflow */
-      width: 100%;
-      box-sizing: border-box;
-    }
+    padding-top: 112px; /* Header height: 64px (main nav) + 48px (tags nav) */
   }
 
 /* =========================================
@@ -275,80 +151,6 @@ html[data-theme="clean-white"] .disabled-next {
    @apply opacity-50 cursor-not-allowed bg-[#f0f0f0] border-[#cccccc] text-[#333333];
 }
 
-  /* Diamond Logo */
-  html[data-theme="dblog"] #top-nav-wrap > a::before {
-    content: "";
-    display: inline-block;
-    width: 0.8em;
-    height: 0.8em;
-    background-color: #4a90e2;
-    transform: rotate(45deg);
-    margin-right: 0.5rem;
-    vertical-align: middle;
-  }
-
-  /* Article List Items (Index/Archive) for dblog */
-  html[data-theme="dblog"] .card-container li {
-    @apply border-b border-border pb-4 mb-4;
-  }
-  
-  html[data-theme="dblog"] .card-container li > a {
-    @apply border-0 shadow-none hover:shadow-none hover:translate-y-0 bg-transparent p-4 hover:bg-accent/10 rounded-md;
-  }
-
-  html[data-theme="dblog"] .card-container li > a > div {
-    @apply flex-col;
-  }
-  
-  /* Reorder: Date/Author (order 1), Title (order 2), Description (order 3) */
-  html[data-theme="dblog"] .card-container li > a > div > div:nth-child(2) {
-    @apply order-1 mb-1 text-foreground/70 text-xs;
-  }
-  
-  html[data-theme="dblog"] .card-container li > a > div > h2,
-  html[data-theme="dblog"] .card-container li > a > div > h3 {
-    @apply order-2 text-xl mb-2 text-foreground font-bold;
-  }
-  
-  html[data-theme="dblog"] .card-container li > a > div > p {
-    @apply order-3 text-sm text-foreground/70;
-  }
-
-  /* Pagination Buttons */
-  html[data-theme="dblog"] nav.pagination-wrapper {
-    @apply mt-8;
-  }
-  
-  html[data-theme="dblog"] nav[aria-label="Pagination"] a {
-    @apply bg-muted text-foreground border border-border hover:bg-border px-4 py-2 rounded-md font-normal;
-  }
-  
-  html[data-theme="dblog"] .disabled-prev,
-  html[data-theme="dblog"] .disabled-next {
-     @apply opacity-50 cursor-not-allowed;
-  }
-}
-
-@utility max-w-app {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --color-muted: var(--muted);
-  --color-border: var(--border);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-accent/75;
-    scrollbar-width: auto;
-    scrollbar-color: var(--color-muted) transparent;
-  }
-  html {
-    @apply overflow-y-scroll scroll-smooth;
-  }
-  body {
-    @apply flex min-h-svh flex-col bg-background font-sans text-foreground selection:bg-accent/75 selection:text-background;
-  }
   a,
   button {
     @apply outline-offset-1 outline-accent focus-visible:no-underline focus-visible:outline-2 focus-visible:outline-dashed;
@@ -357,8 +159,7 @@ html[data-theme="clean-white"] .disabled-next {
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
-  section,
-  footer {
+  section {
     @apply w-full mx-auto max-w-7xl px-4;
   }
 }
