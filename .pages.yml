@@ -28,7 +28,7 @@ content:
         type: image
       - name: body
         label: Body
-        type: rich-text
+        type: code
 
   - name: site-settings
     label: Site Settings
