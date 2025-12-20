@@ -8,6 +8,7 @@ featured: true
 draft: false
 tags:
   - docs
+coverImage: https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=450&fit=crop
 description:
   Some rules & recommendations for creating or adding new posts using AstroPaperr
   theme.

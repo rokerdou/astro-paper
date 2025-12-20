@@ -9,6 +9,7 @@ draft: false
 tags:
   - docs
   - release
+coverImage: https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=800&h=450&fit=crop
 description: New feature in AstroPaper v1.4.0, introducing dynamic OG image generation for blog posts.
 ---
 

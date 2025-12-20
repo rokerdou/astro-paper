@@ -8,6 +8,7 @@ draft: false
 tags:
   - color-schemes
   - docs
+coverImage: https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=800&h=450&fit=crop
 description:
   How you can enable/disable light & dark mode; and customize color schemes
   of AstroPaper theme.

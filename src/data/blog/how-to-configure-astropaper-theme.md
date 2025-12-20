@@ -9,6 +9,7 @@ draft: false
 tags:
   - configuration
   - docs
+coverImage: https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=450&fit=crop
 description: How you can make AstroPaper theme absolutely yours.
 ---
 

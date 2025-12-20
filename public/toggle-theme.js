@@ -1,4 +1,4 @@
-const primaryColorScheme = ""; // "light" | "dark"
+const primaryColorScheme = ""; // "light" | "dark" | "sepia"
 
 // Get theme data from local storage
 const currentTheme = localStorage.getItem("theme");
@@ -56,7 +56,9 @@ window.onload = () => {
 
     // now this script can find and listen for clicks on the control
     document.querySelector("#theme-btn")?.addEventListener("click", () => {
-      themeValue = themeValue === "light" ? "dark" : "light";
+      const themes = ["light", "dark", "sepia", "dblog", "clean-white"];
+      const nextIndex = (themes.indexOf(themeValue) + 1) % themes.length;
+      themeValue = themes[nextIndex];
       setPreference();
     });
   }
@@ -65,6 +67,12 @@ window.onload = () => {
 
   // Runs on view transitions navigation
   document.addEventListener("astro:after-swap", setThemeFeature);
+};
+
+// Expose function to set theme globally
+window.setTheme = function (newTheme) {
+  themeValue = newTheme;
+  setPreference();
 };
 
 // Set theme-color value before page transition

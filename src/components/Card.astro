@@ -10,20 +10,46 @@ export interface Props extends CollectionEntry<"blog"> {
 
 const { variant = "h2", data, id, filePath } = Astro.props;
 
-const { title, description, pubDatetime, modDatetime, timezone } = data;
+const { title, description, pubDatetime, modDatetime, timezone, author, coverImage } = data;
 
 const headerProps = {
   style: { viewTransitionName: slugifyStr(title) },
-  class: "text-xl font-bold text-foreground group-hover:text-accent transition-colors",
+  class: "text-lg font-bold text-foreground group-hover:text-accent transition-colors line-clamp-2 leading-snug",
 };
+
+// 计算阅读时间（简单估算：每200个字1分钟）
+const calculateReadingTime = (content: string) => {
+  const wordsPerMinute = 200;
+  const words = content?.length || description?.length || 500;
+  const minutes = Math.ceil(words / wordsPerMinute);
+  return `${minutes} min`;
+};
+
+const readingTime = calculateReadingTime(description || "");
 ---
 
-<li class="my-4">
-  <a
-    href={getPath(id, filePath)}
-    class="group block h-full rounded-xl border border-border bg-background p-6 transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-  >
-    <div class="flex flex-col gap-2">
+<div class="group flex flex-col h-full bg-background rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-border">
+  {/* 缩略图容器 */}
+  <a href={getPath(id, filePath)} class="relative aspect-[16/9] overflow-hidden bg-muted">
+    {coverImage ? (
+      <img
+        src={coverImage}
+        alt={title}
+        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        loading="lazy"
+      />
+    ) : (
+      <div class="w-full h-full flex items-center justify-center text-muted-foreground">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+    )}
+  </a>
+
+  {/* 内容容器 */}
+  <div class="flex flex-col flex-grow p-5">
+    <a href={getPath(id, filePath)} class="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
       {
         variant === "h2" ? (
           <h2 {...headerProps}>{title}</h2>
@@ -31,8 +57,22 @@ const headerProps = {
           <h3 {...headerProps}>{title}</h3>
         )
       }
-      <Datetime {pubDatetime} {modDatetime} {timezone} />
-      <p class="mt-1 text-base text-foreground/80">{description}</p>
+    </a>
+
+    {/* 元信息 */}
+    <div class="mt-auto flex items-center text-xs text-muted-foreground font-mono gap-4 pt-4">
+      <span class="flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <Datetime {pubDatetime} {modDatetime} {timezone} size="sm" />
+      </span>
+      <span class="flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {readingTime}
+      </span>
     </div>
-  </a>
-</li>
+  </div>
+</div>

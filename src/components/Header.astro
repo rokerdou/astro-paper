@@ -2,11 +2,13 @@
 import IconX from "@/assets/icons/IconX.svg";
 import IconMoon from "@/assets/icons/IconMoon.svg";
 import IconSearch from "@/assets/icons/IconSearch.svg";
-import IconArchive from "@/assets/icons/IconArchive.svg";
 import IconSunHigh from "@/assets/icons/IconSunHigh.svg";
 import IconMenuDeep from "@/assets/icons/IconMenuDeep.svg";
+import IconRss from "@/assets/icons/IconRss.svg";
 import LinkButton from "./LinkButton.astro";
 import { SITE } from "@/config";
+import { getCollection } from "astro:content";
+import getUniqueTags from "@/utils/getUniqueTags";
 
 const { pathname } = Astro.url;
 
@@ -20,9 +22,19 @@ const isActive = (path: string) => {
 
   return currentPath === path || currentPathArray[0] === pathArray[0];
 };
+
+// 获取所有 tags 用于导航栏显示
+const posts = await getCollection("blog");
+const allTags = getUniqueTags(posts);
+
+// 选择最常用的几个 tags 显示在导航栏（最多显示6个）
+const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
+  name: tagName,
+  path: `/tags/${tag}/`
+}));
 ---
 
-<header>
+<header class="bg-background shadow-sm sticky top-0 z-50 border-b border-border">
   <a
     id="skip-to-content"
     href="#main-content"
@@ -30,110 +42,128 @@ const isActive = (path: string) => {
   >
     Skip to content
   </a>
-  <div
-    id="nav-container"
-    class="mx-auto flex max-w-app flex-col items-center justify-between sm:flex-row"
-  >
-    <div
-      id="top-nav-wrap"
-      class="relative flex w-full items-baseline justify-between bg-background p-4 sm:items-center sm:py-6"
-    >
-      <a
-        href="/"
-        class="absolute py-1 text-xl leading-8 font-semibold whitespace-nowrap sm:static sm:my-auto sm:text-2xl sm:leading-none"
-      >
-        {SITE.title}
-      </a>
-      <nav
-        id="nav-menu"
-        class="flex w-full flex-col items-center sm:ms-2 sm:flex-row sm:justify-end sm:space-x-4 sm:py-0"
-      >
+
+  {/* 主导航栏 */}
+  <div class="mx-auto max-w-7xl">
+    <div class="flex items-center justify-between px-4 sm:px-6 h-16">
+      {/* Logo */}
+      <div class="flex-shrink-0 flex items-center">
+        <a href="/" class="flex items-center gap-3 group">
+          <div class="bg-foreground text-background font-mono text-xs px-1.5 py-0.5 rounded font-bold group-hover:scale-110 transition-transform">
+            &lt;/&gt;
+          </div>
+          <span class="text-xl font-bold tracking-tight group-hover:text-accent transition-colors">
+            {SITE.title}
+          </span>
+        </a>
+      </div>
+
+      {/* 桌面端右侧导航 */}
+      <div class="hidden md:flex items-center space-x-6">
+        <a href="/about" class="text-sm font-medium text-foreground/70 hover:text-accent transition-colors">
+          ABOUT
+        </a>
+        <a href="/rss.xml" class="text-sm font-medium text-foreground/70 hover:text-accent transition-colors flex items-center gap-1">
+          RSS
+          <IconRss width={12} height={12} class="stroke-current" />
+        </a>
+        <div class="w-px h-4 bg-border"></div>
+        <LinkButton
+          href="/search"
+          class="text-foreground/70 hover:text-accent transition-colors"
+          ariaLabel="search"
+          title="Search"
+        >
+          <IconSearch width={20} height={20} />
+          <span class="sr-only">Search</span>
+        </LinkButton>
+        {
+          SITE.lightAndDarkMode && (
+            <button
+              id="theme-btn"
+              class="focus-outline text-foreground/70 hover:text-accent transition-colors"
+              title="Toggle theme"
+              aria-label="auto"
+              aria-live="polite"
+            >
+              <IconMoon width={20} height={20} class="scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+              <IconSunHigh width={20} height={20} class="absolute scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+            </button>
+          )
+        }
+      </div>
+
+      {/* 移动端菜单按钮 */}
+      <div class="md:hidden flex items-center gap-4">
+        {
+          SITE.lightAndDarkMode && (
+            <button
+              id="theme-btn-mobile"
+              class="focus-outline text-foreground/70 hover:text-accent transition-colors p-2"
+              title="Toggle theme"
+              aria-label="auto"
+              aria-live="polite"
+            >
+              <IconMoon width={20} height={20} class="scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+              <IconSunHigh width={20} height={20} class="absolute scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+            </button>
+          )
+        }
         <button
           id="menu-btn"
-          class="focus-outline self-end p-2 sm:hidden"
+          class="focus-outline p-2 text-foreground hover:text-accent"
           aria-label="Open Menu"
           aria-expanded="false"
           aria-controls="menu-items"
         >
-          <IconX id="close-icon" class="hidden" />
-          <IconMenuDeep id="menu-icon" />
+          <IconX id="close-icon" class="hidden" width={24} height={24} />
+          <IconMenuDeep id="menu-icon" width={24} height={24} />
         </button>
-        <ul
-          id="menu-items"
-          class:list={[
-            "mt-4 grid w-44 grid-cols-2 place-content-center gap-2",
-            "[&>li>a]:block [&>li>a]:px-4 [&>li>a]:py-3 [&>li>a]:text-center [&>li>a]:font-medium [&>li>a]:hover:text-accent sm:[&>li>a]:px-2 sm:[&>li>a]:py-1",
-            "hidden",
-            "sm:mt-0 sm:flex sm:w-auto sm:gap-x-5 sm:gap-y-0",
-          ]}
-        >
-          <li class="col-span-2">
-            <a href="/posts" class:list={{ "active-nav": isActive("/posts") }}>
-              Posts
-            </a>
-          </li>
-          <li class="col-span-2">
-            <a href="/tags" class:list={{ "active-nav": isActive("/tags") }}>
-              Tags
-            </a>
-          </li>
-          <li class="col-span-2">
-            <a href="/about" class:list={{ "active-nav": isActive("/about") }}>
-              About
-            </a>
-          </li>
-          {
-            SITE.showArchives && (
-              <li class="col-span-2">
-                <LinkButton
-                  href="/archives"
-                  class:list={[
-                    "focus-outline flex justify-center p-3 sm:p-1",
-                    {
-                      "active-nav [&>svg]:stroke-accent": isActive("/archives"),
-                    },
-                  ]}
-                  ariaLabel="archives"
-                  title="Archives"
-                >
-                  <IconArchive class="hidden sm:inline-block" />
-                  <span class="sm:sr-only">Archives</span>
-                </LinkButton>
-              </li>
-            )
-          }
-          <li class="col-span-1 flex items-center justify-center">
-            <LinkButton
-              href="/search"
-              class:list={[
-                "focus-outline flex p-3 sm:p-1",
-                { "[&>svg]:stroke-accent": isActive("/search") },
-              ]}
-              ariaLabel="search"
-              title="Search"
-            >
-              <IconSearch />
-              <span class="sr-only">Search</span>
-            </LinkButton>
-          </li>
-          {
-            SITE.lightAndDarkMode && (
-              <li class="col-span-1 flex items-center justify-center">
-                <button
-                  id="theme-btn"
-                  class="focus-outline relative size-12 p-4 sm:size-8 hover:[&>svg]:stroke-accent"
-                  title="Toggles light & dark"
-                  aria-label="auto"
-                  aria-live="polite"
-                >
-                  <IconMoon class="absolute top-[50%] left-[50%] -translate-[50%] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-                  <IconSunHigh class="absolute top-[50%] left-[50%] -translate-[50%] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-                </button>
-              </li>
-            )
-          }
-        </ul>
-      </nav>
+      </div>
+    </div>
+  </div>
+
+  {/* 分类导航栏 - 桌面端 */}
+  <div class="hidden md:block border-t border-border bg-background/50 backdrop-blur-sm">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-center space-x-1">
+      {topTags.map((tag, index) => (
+        <>
+          <a
+            href={tag.path}
+            class:list={[
+              "px-3 text-sm font-medium transition-colors",
+              isActive(tag.path) ? "text-accent" : "text-foreground/60 hover:text-foreground"
+            ]}
+          >
+            {tag.name}
+          </a>
+          {index < topTags.length - 1 && (
+            <span class="text-border text-xs">/</span>
+          )}
+        </>
+      ))}
+    </nav>
+  </div>
+
+  {/* 移动端菜单 */}
+  <div id="menu-items" class="hidden md:hidden border-t border-border bg-background">
+    <div class="px-2 pt-2 pb-3 space-y-1">
+      <a href="/posts" class="block px-3 py-2 rounded-md text-base font-medium text-foreground/80 hover:text-foreground hover:bg-accent/10">
+        Posts
+      </a>
+      <a href="/tags" class="block px-3 py-2 rounded-md text-base font-medium text-foreground/80 hover:text-foreground hover:bg-accent/10">
+        Tags
+      </a>
+      <a href="/search" class="block px-3 py-2 rounded-md text-base font-medium text-foreground/80 hover:text-foreground hover:bg-accent/10">
+        Search
+      </a>
+      <div class="border-t border-border my-2"></div>
+      <a href="/about" class="block px-3 py-2 rounded-md text-base font-medium text-foreground/80 hover:text-foreground hover:bg-accent/10">
+        About
+      </a>
+      <a href="/rss.xml" class="block px-3 py-2 rounded-md text-base font-medium text-foreground/80 hover:text-foreground hover:bg-accent/10">
+        RSS
+      </a>
     </div>
   </div>
 </header>

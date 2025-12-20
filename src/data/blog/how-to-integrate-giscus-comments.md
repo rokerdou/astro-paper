@@ -10,6 +10,7 @@ tags:
   - astro
   - blog
   - docs
+coverImage: https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=450&fit=crop
 description: Comment function on a static blog hosted on GitHub Pages with Giscus.
 ---
 

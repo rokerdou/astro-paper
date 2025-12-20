@@ -8,6 +8,7 @@ featured: false
 draft: false
 tags:
   - color-schemes
+coverImage: https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800&h=450&fit=crop
 description:
   Some of the well-crafted, predefined color schemes for AstroPaper blog
   theme.
