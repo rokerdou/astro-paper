@@ -1,6 +1,5 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import QueryProvider from "@/components/react/QueryProvider";
 import EditPostWrapper from "@/components/react/admin/EditPostWrapper";
 import { SITE } from "@/config";
 
@@ -17,8 +16,6 @@ const { slug } = Astro.params;
         <span style="color: var(--accent);"> / Edit Post</span>
       </h1>
     </div>
-    <QueryProvider client:load>
-      <EditPostWrapper slug={slug!} />
-    </QueryProvider>
+    <EditPostWrapper client:load slug={slug!} />
   </div>
 </Layout>

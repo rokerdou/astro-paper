@@ -2,13 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "tiptap-markdown";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useCreatePost, useUpdatePost, useTags, type Post } from "./hooks";
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
 
 interface Props {
   post?: Post;
 }
 
-export default function PostEditor({ post }: Props) {
+function PostEditorInner({ post }: Props) {
   const isEdit = !!post;
   const createPost = useCreatePost();
   const updatePost = useUpdatePost();
@@ -150,5 +153,13 @@ export default function PostEditor({ post }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PostEditor(props: Props) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <PostEditorInner {...props} />
+    </QueryClientProvider>
   );
 }

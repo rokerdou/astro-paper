@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useTags } from "./hooks";
 
-export default function TagManager() {
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
+
+function TagManagerInner() {
   const { data: tags, isLoading } = useTags();
   const [newTag, setNewTag] = useState("");
 
@@ -68,5 +71,13 @@ export default function TagManager() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function TagManager() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TagManagerInner />
+    </QueryClientProvider>
   );
 }

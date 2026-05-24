@@ -1,6 +1,5 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import QueryProvider from "@/components/react/QueryProvider";
 import PostList from "@/components/react/admin/PostList";
 import { SITE } from "@/config";
 
@@ -17,8 +16,6 @@ export const prerender = false;
       <a href="/admin" style="color: var(--accent); font-weight: 500;">Posts</a>
       <a href="/admin/tags" style="color: var(--foreground); opacity: 0.7;">Tags</a>
     </div>
-    <QueryProvider client:load>
-      <PostList />
-    </QueryProvider>
+    <PostList client:load />
   </div>
 </Layout>

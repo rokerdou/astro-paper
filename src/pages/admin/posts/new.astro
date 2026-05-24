@@ -1,6 +1,5 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import QueryProvider from "@/components/react/QueryProvider";
 import PostEditor from "@/components/react/admin/PostEditor";
 import { SITE } from "@/config";
 
@@ -15,8 +14,6 @@ export const prerender = false;
         <span style="color: var(--accent);"> / New Post</span>
       </h1>
     </div>
-    <QueryProvider client:load>
-      <PostEditor />
-    </QueryProvider>
+    <PostEditor client:load />
   </div>
 </Layout>

@@ -1,5 +1,10 @@
 import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { usePosts, useDeletePost } from "./hooks";
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
+
+function PostListInner() {
 
 export default function PostList() {
   const { data: posts, isLoading } = usePosts();
@@ -86,5 +91,13 @@ export default function PostList() {
         </tbody>
       </table>
     </div>
+  );
+}
+
+export default function PostList() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <PostListInner />
+    </QueryClientProvider>
   );
 }

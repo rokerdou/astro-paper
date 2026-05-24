@@ -1,6 +1,5 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import QueryProvider from "@/components/react/QueryProvider";
 import TagManager from "@/components/react/admin/TagManager";
 import { SITE } from "@/config";
 
@@ -17,8 +16,6 @@ export const prerender = false;
       <a href="/admin" style="color: var(--foreground); opacity: 0.7;">Posts</a>
       <a href="/admin/tags" style="color: var(--accent); font-weight: 500;">Tags</a>
     </div>
-    <QueryProvider client:load>
-      <TagManager />
-    </QueryProvider>
+    <TagManager client:load />
   </div>
 </Layout>
