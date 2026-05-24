@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { usePosts, useDeletePost } from "./hooks";
 
 export default function PostList() {
@@ -87,5 +88,3 @@ export default function PostList() {
     </div>
   );
 }
-
-import { useState } from "react";
