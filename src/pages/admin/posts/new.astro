@@ -1,0 +1,22 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import QueryProvider from "@/components/react/QueryProvider";
+import PostEditor from "@/components/react/admin/PostEditor";
+import { SITE } from "@/config";
+
+export const prerender = false;
+---
+
+<Layout title={`New Post | ${SITE.title}`}>
+  <div style="max-width: 56rem; margin: 0 auto; padding: 2rem 1rem;">
+    <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+      <h1 style="font-size: 1.5rem; font-weight: 700;">
+        <a href="/admin" style="color: var(--foreground); text-decoration: none;">Admin</a>
+        <span style="color: var(--accent);"> / New Post</span>
+      </h1>
+    </div>
+    <QueryProvider client:load>
+      <PostEditor client:load />
+    </QueryProvider>
+  </div>
+</Layout>

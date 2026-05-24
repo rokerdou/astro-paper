@@ -45,5 +45,10 @@ public/pagefind/
 .vercel/
 *.tsbuildinfo
 
+# Database
+content.db
+content.db-journal
+content.db-wal
+
 # Gemini CLI files
 .gemini-clipboard

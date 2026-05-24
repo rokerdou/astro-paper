@@ -1,0 +1,109 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+const BASE = "";
+
+export interface PostTag {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface Post {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  body?: string;
+  author: string;
+  pubDatetime: string;
+  modDatetime: string | null;
+  featured: boolean;
+  draft: boolean;
+  ogImage: string | null;
+  coverImage: string | null;
+  canonicalUrl: string | null;
+  hideEditPost: boolean;
+  timezone: string | null;
+  tags: PostTag[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function usePosts() {
+  return useQuery({
+    queryKey: ["posts"],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/api/posts`);
+      const data = await res.json();
+      return data.posts as Post[];
+    },
+  });
+}
+
+export function usePost(slug: string | undefined) {
+  return useQuery({
+    queryKey: ["post", slug],
+    queryFn: async () => {
+      if (!slug) return null;
+      const res = await fetch(`${BASE}/api/posts/${slug}`);
+      const data = await res.json();
+      return data.post as Post;
+    },
+    enabled: !!slug,
+  });
+}
+
+export function useCreatePost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (post: Partial<Post> & { title: string }) => {
+      const res = await fetch(`${BASE}/api/posts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(post),
+      });
+      return res.json();
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["posts"] }),
+  });
+}
+
+export function useUpdatePost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ slug, ...post }: Partial<Post> & { slug: string }) => {
+      const res = await fetch(`${BASE}/api/posts/${slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(post),
+      });
+      return res.json();
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["posts"] });
+      qc.invalidateQueries({ queryKey: ["post", vars.slug] });
+    },
+  });
+}
+
+export function useDeletePost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (slug: string) => {
+      const res = await fetch(`${BASE}/api/posts/${slug}`, { method: "DELETE" });
+      return res.json();
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["posts"] }),
+  });
+}
+
+export function useTags() {
+  return useQuery({
+    queryKey: ["tags"],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/api/tags`);
+      const data = await res.json();
+      return data.tags as PostTag[];
+    },
+  });
+}

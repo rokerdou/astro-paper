@@ -1,6 +1,7 @@
 ---
 layout: ../layouts/AboutLayout.astro
 title: "About"
+prerender: true
 ---
 
 AstroPaper is a minimal, accessible and SEO-friendly blog theme built with [Astro](https://astro.build/) and [Tailwind CSS](https://tailwindcss.com/).

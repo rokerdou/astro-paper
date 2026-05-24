@@ -2,6 +2,7 @@ import { defineConfig, envField } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import sitemap from "@astrojs/sitemap";
 import react from "@astrojs/react";
+import node from "@astrojs/node";
 import remarkToc from "remark-toc";
 import remarkCollapse from "remark-collapse";
 import {
@@ -14,6 +15,8 @@ import { SITE } from "./src/config";
 
 // https://astro.build/config
 export default defineConfig({
+  output: "server",
+  adapter: node({ mode: "standalone" }),
   site: SITE.website,
   integrations: [
     react(),

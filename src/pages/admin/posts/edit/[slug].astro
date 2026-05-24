@@ -1,0 +1,24 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import QueryProvider from "@/components/react/QueryProvider";
+import EditPostWrapper from "@/components/react/admin/EditPostWrapper";
+import { SITE } from "@/config";
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+---
+
+<Layout title={`Edit Post | ${SITE.title}`}>
+  <div style="max-width: 56rem; margin: 0 auto; padding: 2rem 1rem;">
+    <div style="margin-bottom: 1.5rem;">
+      <h1 style="font-size: 1.5rem; font-weight: 700;">
+        <a href="/admin" style="color: var(--foreground); text-decoration: none;">Admin</a>
+        <span style="color: var(--accent);"> / Edit Post</span>
+      </h1>
+    </div>
+    <QueryProvider client:load>
+      <EditPostWrapper client:load slug={slug!} />
+    </QueryProvider>
+  </div>
+</Layout>
