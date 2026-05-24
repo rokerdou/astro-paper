@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "tiptap-markdown";
@@ -7,15 +7,73 @@ import { useCreatePost, useUpdatePost, useTags, type Post } from "./hooks";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
 
-interface Props {
-  post?: Post;
-}
+const input: React.CSSProperties = {
+  width: "100%",
+  padding: "0.625rem 0.875rem",
+  border: "1px solid var(--border)",
+  borderRadius: "0.5rem",
+  background: "var(--background)",
+  color: "var(--foreground)",
+  fontSize: "0.875rem",
+  lineHeight: 1.5,
+  transition: "border-color 0.15s, box-shadow 0.15s",
+  outline: "none",
+  boxSizing: "border-box",
+};
 
-function PostEditorInner({ post }: Props) {
+const label: React.CSSProperties = {
+  display: "block",
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.06em",
+  color: "var(--muted-foreground)",
+  marginBottom: "0.375rem",
+};
+
+const sectionBox: React.CSSProperties = {
+  background: "var(--background)",
+  border: "1px solid var(--border)",
+  borderRadius: "0.75rem",
+  padding: "1.25rem",
+};
+
+const btnPrimary: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "0.625rem 1.75rem",
+  border: "none",
+  borderRadius: "0.5rem",
+  background: "var(--accent)",
+  color: "#fff",
+  fontSize: "0.875rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  transition: "opacity 0.15s",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+};
+
+const btnSecondary: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "0.625rem 1.25rem",
+  border: "1px solid var(--border)",
+  borderRadius: "0.5rem",
+  background: "transparent",
+  color: "var(--foreground)",
+  fontSize: "0.875rem",
+  fontWeight: 500,
+  cursor: "pointer",
+  textDecoration: "none",
+  transition: "border-color 0.15s",
+};
+
+function PostEditorInner({ post }: { post?: Post }) {
   const isEdit = !!post;
   const createPost = useCreatePost();
   const updatePost = useUpdatePost();
-  const { data: allTags } = useTags();
 
   const [title, setTitle] = useState(post?.title || "");
   const [description, setDescription] = useState(post?.description || "");
@@ -25,29 +83,31 @@ function PostEditorInner({ post }: Props) {
   const [featured, setFeatured] = useState(post?.featured ?? false);
   const [tagInput, setTagInput] = useState(post?.tags.map(t => t.name).join(", ") || "");
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const editor = useEditor({
     extensions: [StarterKit, Markdown],
     content: post?.body || "",
+    editorProps: {
+      attributes: {
+        style: "outline: none; min-height: 20rem; font-size: 0.9375rem; line-height: 1.7; color: var(--foreground);",
+      },
+    },
   });
 
   const handleSave = useCallback(async () => {
     if (!title.trim()) return;
     setSaving(true);
+    setSaved(false);
 
     const body = editor?.storage.markdown?.getMarkdown() || "";
     const tags = tagInput.split(",").map(t => t.trim()).filter(Boolean);
     const now = new Date().toISOString();
 
     const payload = {
-      title,
-      description,
-      body,
-      author,
+      title, description, body, author,
       coverImage: coverImage || null,
-      draft,
-      featured,
-      tags,
+      draft, featured, tags,
       pubDatetime: post?.pubDatetime || now,
       modDatetime: now,
     };
@@ -58,105 +118,120 @@ function PostEditorInner({ post }: Props) {
       } else {
         await createPost.mutateAsync(payload);
       }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } finally {
       setSaving(false);
     }
   }, [title, description, editor, tagInput, author, coverImage, draft, featured, post, isEdit, createPost, updatePost]);
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "0.5rem 0.75rem",
-    border: "1px solid var(--border)",
-    borderRadius: "0.375rem",
-    background: "var(--background)",
-    color: "var(--foreground)",
-    fontSize: "0.875rem",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontSize: "0.875rem",
-    fontWeight: 500,
-    marginBottom: "0.25rem",
-    color: "var(--foreground)",
-  };
-
   return (
-    <div style={{ maxWidth: "48rem", margin: "0 auto" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div>
-          <label style={labelStyle}>Title *</label>
-          <input style={{ ...inputStyle, fontSize: "1.25rem", fontWeight: 600 }} value={title} onChange={e => setTitle(e.target.value)} placeholder="Post title" />
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
 
-        <div>
-          <label style={labelStyle}>Description</label>
-          <textarea style={{ ...inputStyle, minHeight: "4rem" }} value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description..." />
-        </div>
+      {/* Title */}
+      <div style={sectionBox}>
+        <input
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          placeholder="Post title..."
+          style={{
+            ...input,
+            border: "none",
+            fontSize: "1.375rem",
+            fontWeight: 700,
+            padding: "0.25rem 0",
+            letterSpacing: "-0.01em",
+            background: "transparent",
+          }}
+        />
+      </div>
 
-        <div>
-          <label style={labelStyle}>Tags (comma separated)</label>
-          <input style={inputStyle} value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="docs, astro, react" />
+      {/* Metadata grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div style={sectionBox}>
+          <label style={label}>Description</label>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Brief description..."
+            style={{ ...input, minHeight: "5rem", resize: "vertical" }}
+          />
         </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div style={{ ...sectionBox, display: "flex", flexDirection: "column", gap: "0.875rem" }}>
           <div>
-            <label style={labelStyle}>Author</label>
-            <input style={inputStyle} value={author} onChange={e => setAuthor(e.target.value)} />
+            <label style={label}>Author</label>
+            <input style={input} value={author} onChange={e => setAuthor(e.target.value)} placeholder="Author name" />
           </div>
           <div>
-            <label style={labelStyle}>Cover Image URL</label>
-            <input style={inputStyle} value={coverImage} onChange={e => setCoverImage(e.target.value)} placeholder="https://..." />
+            <label style={label}>Tags</label>
+            <input style={input} value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Comma separated" />
           </div>
         </div>
+      </div>
 
-        <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-            <input type="checkbox" checked={draft} onChange={e => setDraft(e.target.checked)} />
-            <span style={{ fontSize: "0.875rem" }}>Draft</span>
+      {/* Cover image + toggles */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "1rem", alignItems: "start" }}>
+        <div style={sectionBox}>
+          <label style={label}>Cover Image URL</label>
+          <input style={input} value={coverImage} onChange={e => setCoverImage(e.target.value)} placeholder="https://..." />
+        </div>
+        <div style={{ ...sectionBox, display: "flex", gap: "1.25rem", padding: "0.875rem 1.25rem" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.875rem" }}>
+            <input type="checkbox" checked={draft} onChange={e => setDraft(e.target.checked)}
+              style={{ accentColor: "var(--accent)" }} />
+            <span style={{ color: draft ? "#d97706" : "var(--muted-foreground)", fontWeight: 500 }}>Draft</span>
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-            <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} />
-            <span style={{ fontSize: "0.875rem" }}>Featured</span>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.875rem" }}>
+            <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)}
+              style={{ accentColor: "var(--accent)" }} />
+            <span style={{ color: featured ? "var(--accent)" : "var(--muted-foreground)", fontWeight: 500 }}>Featured</span>
           </label>
         </div>
+      </div>
 
-        <div>
-          <label style={labelStyle}>Content (Markdown)</label>
-          <div style={{
-            border: "1px solid var(--border)",
-            borderRadius: "0.375rem",
-            minHeight: "24rem",
-            padding: "0.75rem",
-            background: "var(--background)",
-          }}>
-            <EditorContent editor={editor} />
-          </div>
+      {/* Editor */}
+      <div style={{ ...sectionBox, padding: 0, overflow: "hidden" }}>
+        <div style={{
+          padding: "0.5rem 1rem",
+          borderBottom: "1px solid var(--border)",
+          fontSize: "0.6875rem",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          color: "var(--muted-foreground)",
+        }}>
+          Markdown Content
         </div>
+        <div style={{ padding: "1rem 1.25rem", minHeight: "22rem" }}>
+          <EditorContent editor={editor} />
+        </div>
+      </div>
 
-        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-          <button
-            onClick={handleSave}
-            disabled={saving || !title.trim()}
-            style={{
-              padding: "0.5rem 1.5rem",
-              border: "none",
-              borderRadius: "0.375rem",
-              background: saving ? "var(--border)" : "var(--accent)",
-              color: "#fff",
-              cursor: saving ? "not-allowed" : "pointer",
-              fontWeight: 500,
-            }}
-          >
-            {saving ? "Saving..." : isEdit ? "Update" : "Create"}
-          </button>
-        </div>
+      {/* Actions */}
+      <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end", alignItems: "center" }}>
+        {saved && (
+          <span style={{ fontSize: "0.8125rem", color: "#16a34a", fontWeight: 500 }}>
+            Saved successfully
+          </span>
+        )}
+        <a href="/admin" style={btnSecondary}>Cancel</a>
+        <button
+          onClick={handleSave}
+          disabled={saving || !title.trim()}
+          style={{
+            ...btnPrimary,
+            opacity: saving || !title.trim() ? 0.5 : 1,
+            cursor: saving || !title.trim() ? "not-allowed" : "pointer",
+          }}
+        >
+          {saving ? "Saving..." : isEdit ? "Update Post" : "Publish Post"}
+        </button>
       </div>
     </div>
   );
 }
 
-export default function PostEditor(props: Props) {
+export default function PostEditor(props: { post?: Post }) {
   return (
     <QueryClientProvider client={queryClient}>
       <PostEditorInner {...props} />

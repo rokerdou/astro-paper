@@ -7,13 +7,62 @@ export const prerender = false;
 ---
 
 <Layout title={`New Post | ${SITE.title}`}>
-  <div style="max-width: 56rem; margin: 0 auto; padding: 2rem 1rem;">
-    <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-      <h1 style="font-size: 1.5rem; font-weight: 700;">
-        <a href="/admin" style="color: var(--foreground); text-decoration: none;">Admin</a>
-        <span style="color: var(--accent);"> / New Post</span>
-      </h1>
+  <style is:global>
+    .admin-shell {
+      max-width: 64rem;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .admin-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .admin-brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--foreground);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    .admin-brand-sep { color: var(--border); font-weight: 300; margin: 0 0.25rem; }
+    .admin-section { color: var(--accent); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    .admin-nav {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    .admin-nav a {
+      padding: 0.625rem 1.25rem;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .admin-nav a:hover { color: var(--foreground); }
+    .admin-nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  </style>
+
+  <div class="admin-shell">
+    <div class="admin-header">
+      <a href="/admin" class="admin-brand">Admin</a>
+      <span class="admin-brand-sep">/</span>
+      <span class="admin-section">New Post</span>
     </div>
+
+    <nav class="admin-nav">
+      <a href="/admin">Posts</a>
+      <a href="/admin/tags">Tags</a>
+    </nav>
+
     <PostEditor client:load />
   </div>
 </Layout>
