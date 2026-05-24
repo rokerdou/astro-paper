@@ -5,8 +5,6 @@ import { usePosts, useDeletePost } from "./hooks";
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
 
 function PostListInner() {
-
-export default function PostList() {
   const { data: posts, isLoading } = usePosts();
   const deletePost = useDeletePost();
   const [deleting, setDeleting] = useState<string | null>(null);
