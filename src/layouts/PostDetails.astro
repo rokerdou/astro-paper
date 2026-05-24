@@ -15,6 +15,8 @@ import IconChevronLeft from "@/assets/icons/IconChevronLeft.svg";
 import IconChevronRight from "@/assets/icons/IconChevronRight.svg";
 import { SITE } from "@/config";
 import TableOfContents from "@/components/TableOfContents.astro";
+import Comments from "@/components/react/Comments";
+import QueryProvider from "@/components/react/QueryProvider";
 
 export interface Props {
   post: CollectionEntry<"blog">;
@@ -174,6 +176,21 @@ const nextPost =
         <BackToTopButton />
 
         <ShareLinks />
+
+        <!-- Comments (Giscus) -->
+        <div data-pagefind-ignore class="mx-auto mt-8 max-w-3xl">
+          <QueryProvider client:idle>
+            <Comments
+              client:idle
+              repo="satnaing/astro-paper"
+              repoId="R_kgDOIufOFg"
+              category="Comments"
+              categoryId="DIC_kwDOIufOFs4CbeCX"
+              mapping="pathname"
+              lang={SITE.lang || "en"}
+            />
+          </QueryProvider>
+        </div>
 
         <!-- Previous/Next Post Buttons -->
         <div
