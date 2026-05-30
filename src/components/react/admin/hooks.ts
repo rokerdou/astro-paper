@@ -53,10 +53,12 @@ export function usePost(slug: string | undefined) {
   });
 }
 
+export type CreatePostInput = Omit<Partial<Post>, "tags"> & { title: string; tags?: string[] };
+
 export function useCreatePost() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (post: Partial<Post> & { title: string }) => {
+    mutationFn: async (post: CreatePostInput) => {
       const res = await fetch(`${BASE}/api/posts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -68,10 +70,12 @@ export function useCreatePost() {
   });
 }
 
+export type UpdatePostInput = Omit<Partial<Post>, "tags"> & { slug: string; tags?: string[] };
+
 export function useUpdatePost() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ slug, ...post }: Partial<Post> & { slug: string }) => {
+    mutationFn: async ({ slug, ...post }: UpdatePostInput) => {
       const res = await fetch(`${BASE}/api/posts/${slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { usePost } from "./hooks";
+import { vars, spinnerStyle } from "./styles";
 import PostEditor from "./PostEditor";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
@@ -11,11 +12,11 @@ function EditPostInner({ slug }: { slug: string }) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}>
         <div style={{
-          width: "2rem", height: "2rem", border: "2px solid var(--border)",
+          width: "1.5rem", height: "1.5rem", border: "2px solid var(--border)",
           borderTopColor: "var(--accent)", borderRadius: "50%",
           animation: "admin-spin 0.6s linear infinite",
         }} />
-        <style>{`@keyframes admin-spin { to { transform: rotate(360deg) } }`}</style>
+        <style>{spinnerStyle}</style>
       </div>
     );
   }
@@ -29,10 +30,15 @@ function EditPostInner({ slug }: { slug: string }) {
         background: "var(--muted)",
         borderRadius: "0.75rem",
         border: "1px solid var(--border)",
+        fontFamily: vars.font,
       }}>
-        <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>&#128533;</div>
-        <div style={{ fontSize: "1rem", fontWeight: 600, color: "var(--foreground)", marginBottom: "0.25rem" }}>Post not found</div>
-        <div style={{ fontSize: "0.875rem" }}>The post "{slug}" does not exist or has been deleted.</div>
+        <div style={{ fontSize: "1.5rem", marginBottom: "0.75rem", opacity: 0.5 }}>404</div>
+        <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "var(--foreground)", marginBottom: "0.25rem" }}>
+          Post not found
+        </div>
+        <div style={{ fontSize: "0.8125rem" }}>
+          The post "{slug}" does not exist or has been deleted.
+        </div>
       </div>
     );
   }
