@@ -6,6 +6,7 @@ dist/
 
 # Dependencies
 node_modules/
+.pnpm-store/
 package-lock.json
 
 # Logs
@@ -49,6 +50,9 @@ public/pagefind/
 content.db
 content.db-journal
 content.db-wal
+content.db-shm
+*.db-shm
+*.db-wal
 
 # Gemini CLI files
 .gemini-clipboard

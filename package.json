@@ -13,6 +13,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@astrojs/markdown-remark": "^6.3.3",
     "@astrojs/node": "^9.5.5",
     "@astrojs/react": "^5.0.5",
     "@astrojs/rss": "^4.0.12",

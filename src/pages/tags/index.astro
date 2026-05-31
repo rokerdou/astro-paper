@@ -1,17 +1,16 @@
 ---
-export const prerender = true;
-import { getCollection } from "astro:content";
+export const prerender = false;
 import Main from "@/layouts/Main.astro";
 import Layout from "@/layouts/Layout.astro";
 import Tag from "@/components/Tag.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import getUniqueTags from "@/utils/getUniqueTags";
+import { getRuntimePosts, getRuntimeTags } from "@/utils/runtimePosts";
 import { SITE } from "@/config";
 
-const posts = await getCollection("blog");
+Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
-let tags = getUniqueTags(posts);
+let tags = getRuntimeTags(getRuntimePosts());
 ---
 
 <Layout title={`Tags | ${SITE.title}`}>

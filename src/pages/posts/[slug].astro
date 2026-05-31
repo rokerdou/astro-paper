@@ -1,0 +1,21 @@
+---
+export const prerender = false;
+import PostDetails from "@/layouts/PostDetails.astro";
+import { getRuntimePost, getRuntimePosts } from "@/utils/runtimePosts";
+
+Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
+
+const slug = Astro.params.slug;
+const post = slug ? await getRuntimePost(slug) : null;
+
+if (!post) {
+  if (slug && /^\d+$/.test(slug)) {
+    return Astro.redirect(`/posts/page/${slug}/`);
+  }
+  return Astro.redirect("/404");
+}
+
+const sortedPosts = getRuntimePosts();
+---
+
+<PostDetails post={post} posts={sortedPosts} />

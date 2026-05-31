@@ -1,17 +1,20 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import type { BlogPostEntry } from "@/utils/runtimePosts";
 import IconEdit from "@/assets/icons/IconEdit.svg";
 import { SITE } from "@/config";
 
 export interface Props {
   hideEditPost?: CollectionEntry<"blog">["data"]["hideEditPost"];
   class?: string;
-  post: CollectionEntry<"blog">;
+  post: CollectionEntry<"blog"> | BlogPostEntry;
 }
 
 const { hideEditPost, post, class: className = "" } = Astro.props;
 
-const href = `${SITE.editPost.url}${post.filePath}`;
+const href = post.filePath
+  ? `${SITE.editPost.url}${post.filePath}`
+  : `/admin/posts/edit/${post.id}`;
 const showEditPost =
   SITE.editPost.enabled && !hideEditPost && href.trim() !== "";
 ---

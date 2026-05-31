@@ -1,5 +1,7 @@
 ---
 import { render, type CollectionEntry } from "astro:content";
+import type { MarkdownHeading } from "astro";
+import type { BlogPostEntry } from "@/utils/runtimePosts";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
@@ -19,8 +21,8 @@ import Comments from "@/components/react/Comments";
 import QueryProvider from "@/components/react/QueryProvider";
 
 export interface Props {
-  post: CollectionEntry<"blog">;
-  posts: CollectionEntry<"blog">[];
+  post: CollectionEntry<"blog"> | BlogPostEntry;
+  posts: (CollectionEntry<"blog"> | BlogPostEntry)[];
 }
 
 const { post, posts } = Astro.props;
@@ -39,7 +41,16 @@ const {
   hideEditPost,
 } = post.data;
 
-const { Content, headings } = await render(post);
+const runtimeHtml = "rendered" in post ? post.rendered?.html : undefined;
+const runtimeHeadings =
+  "rendered" in post
+    ? ((post.rendered?.metadata?.headings ?? []) as MarkdownHeading[])
+    : undefined;
+const renderedPost = runtimeHtml
+  ? null
+  : await render(post as CollectionEntry<"blog">);
+const Content = renderedPost?.Content;
+const headings = runtimeHeadings ?? renderedPost?.headings ?? [];
 
 let ogImageUrl: string | undefined;
 
@@ -160,7 +171,7 @@ const nextPost =
           id="article"
           class="app-prose mx-auto mt-8 max-w-3xl prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg)"
         >
-          <Content />
+          {Content ? <Content /> : <Fragment set:html={runtimeHtml ?? ""} />}
         </article>
 
         <div class="my-12">
