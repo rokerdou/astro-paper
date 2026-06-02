@@ -2,10 +2,11 @@ export const prerender = false;
 import rss from "@astrojs/rss";
 import { getPath } from "@/utils/getPath";
 import { getRuntimePosts } from "@/utils/runtimePosts";
+import { getD1 } from "@/utils/cloudflare";
 import { SITE } from "@/config";
 
-export async function GET() {
-  const sortedPosts = getRuntimePosts();
+export async function GET({ locals }: { locals: App.Locals }) {
+  const sortedPosts = await getRuntimePosts(getD1(locals));
   return rss({
     title: SITE.title,
     description: SITE.desc,

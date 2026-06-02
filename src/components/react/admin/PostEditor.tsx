@@ -29,7 +29,6 @@ function PostEditorInner({ post }: { post?: Post }) {
   const [body, setBody] = useState(post?.body || "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [rebuilding, setRebuilding] = useState(false);
   const [error, setError] = useState("");
 
   const handleSave = useCallback(async () => {
@@ -61,11 +60,6 @@ function PostEditorInner({ post }: { post?: Post }) {
         await createPost.mutateAsync(base as CreatePostInput);
       }
       setSaved(true);
-
-      // Trigger site rebuild in background
-      setRebuilding(true);
-      fetch("/api/rebuild", { method: "POST" }).finally(() => setRebuilding(false));
-
       setTimeout(() => setSaved(false), 3000);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to save");
@@ -209,11 +203,8 @@ function PostEditorInner({ post }: { post?: Post }) {
         {error && (
           <span style={{ fontSize: "0.8125rem", color: "#ef4444", fontWeight: 500 }}>{error}</span>
         )}
-        {saved && !rebuilding && (
+        {saved && (
           <span style={{ fontSize: "0.8125rem", color: "#16a34a", fontWeight: 500 }}>Saved</span>
-        )}
-        {rebuilding && (
-          <span style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)", fontWeight: 500 }}>Rebuilding site...</span>
         )}
         <a href="/admin" style={btnSecondary}>Cancel</a>
         <button

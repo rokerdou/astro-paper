@@ -7,6 +7,7 @@ import Footer from "@/components/Footer.astro";
 import Card from "@/components/Card.astro";
 import getPostsByGroupCondition from "@/utils/getPostsByGroupCondition";
 import { getRuntimePosts } from "@/utils/runtimePosts";
+import { getD1 } from "@/utils/cloudflare";
 import { SITE } from "@/config";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
@@ -16,7 +17,7 @@ if (!SITE.showArchives) {
   return Astro.redirect("/404");
 }
 
-const posts = getRuntimePosts();
+const posts = await getRuntimePosts(getD1(Astro.locals));
 
 const months = [
   "January",

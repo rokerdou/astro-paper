@@ -7,13 +7,14 @@ import Card from "@/components/Card.astro";
 import Pagination from "@/components/Pagination.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import { createRuntimePage, getRuntimePosts } from "@/utils/runtimePosts";
+import { getD1 } from "@/utils/cloudflare";
 import { SITE } from "@/config";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
 const currentPage = Number(Astro.params.page ?? "1");
 const page = createRuntimePage(
-  getRuntimePosts(),
+  await getRuntimePosts(getD1(Astro.locals)),
   Number.isFinite(currentPage) ? currentPage : 1,
   SITE.postPerPage,
   "/posts/page"

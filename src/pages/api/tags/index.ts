@@ -1,36 +1,26 @@
 import type { APIRoute } from "astro";
-import { getDb } from "@/db";
-import { tags } from "@/db/schema";
+import { findTagBySlug, createTag, listTags } from "@/db/d1";
+import { getD1 } from "@/utils/cloudflare";
 import { slugifyStr } from "@/utils/slugify";
-import { eq } from "drizzle-orm";
 
 export const prerender = false;
 
-export const GET: APIRoute = async () => {
-  const db = getDb();
-  const allTags = db.select().from(tags).all();
-  return new Response(JSON.stringify({ tags: allTags }), {
-    headers: { "Content-Type": "application/json" },
-  });
+export const GET: APIRoute = async ({ locals }) => {
+  const tags = await listTags(getD1(locals));
+  return Response.json({ tags });
 };
 
-export const POST: APIRoute = async ({ request }) => {
-  const db = getDb();
+export const POST: APIRoute = async ({ request, locals }) => {
+  const db = getD1(locals);
   const body = await request.json();
   const name = body.name;
   const slug = slugifyStr(name);
 
-  const existing = db.select().from(tags).where(eq(tags.slug, slug)).get();
-
+  const existing = await findTagBySlug(db, slug);
   if (existing) {
-    return new Response(JSON.stringify({ tag: existing }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ tag: existing });
   }
 
-  const tag = db.insert(tags).values({ name, slug }).returning().get();
-  return new Response(JSON.stringify({ tag }), {
-    status: 201,
-    headers: { "Content-Type": "application/json" },
-  });
+  const tag = await createTag(db, name, slug);
+  return Response.json({ tag }, { status: 201 });
 };

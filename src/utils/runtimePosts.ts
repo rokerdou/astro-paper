@@ -1,17 +1,13 @@
-import { createMarkdownProcessor } from "@astrojs/markdown-remark";
 import type { MarkdownHeading } from "astro";
-import remarkToc from "remark-toc";
-import remarkCollapse from "remark-collapse";
-import {
-  transformerNotationDiff,
-  transformerNotationHighlight,
-  transformerNotationWordHighlight,
-} from "@shikijs/transformers";
-import { asc, eq } from "drizzle-orm";
-import { getDb } from "@/db";
-import { posts, postsTags, tags } from "@/db/schema";
 import { SITE } from "@/config";
-import { transformerFileName } from "@/utils/transformers/fileName";
+import {
+  getPostWithTags,
+  listPostSummaries,
+  listTagNamesForPostIds,
+  listTopTags,
+  type PostRow,
+  type PostSummaryRow,
+} from "@/db/d1";
 import { slugifyStr } from "./slugify";
 
 export interface BlogPostData {
@@ -44,27 +40,13 @@ export interface BlogPostEntry {
   };
 }
 
-let markdownProcessor: Awaited<ReturnType<typeof createMarkdownProcessor>> | null =
-  null;
-
-async function renderMarkdown(content: string) {
-  markdownProcessor ??= await createMarkdownProcessor({
-    syntaxHighlight: "shiki",
-    remarkPlugins: [remarkToc, [remarkCollapse, { test: "Table of contents" }]],
-    shikiConfig: {
-      themes: { light: "min-light", dark: "night-owl" },
-      defaultColor: false,
-      wrap: false,
-      transformers: [
-        transformerFileName({ style: "v2", hideDot: false }),
-        transformerNotationHighlight(),
-        transformerNotationWordHighlight(),
-        transformerNotationDiff({ matchAlgorithm: "v3" }),
-      ],
-    },
-  });
-  const { code, metadata } = await markdownProcessor.render(content);
-  return { html: code, metadata };
+function parseHeadings(value?: string): MarkdownHeading[] {
+  if (!value) return [];
+  try {
+    return JSON.parse(value) as MarkdownHeading[];
+  } catch {
+    return [];
+  }
 }
 
 function isPostPublished(post: BlogPostEntry) {
@@ -87,83 +69,79 @@ function sortPosts<T extends BlogPostEntry>(posts: T[]) {
 }
 
 function toEntry(
-  post: typeof posts.$inferSelect,
+  post: PostRow | PostSummaryRow,
   postTags: string[],
   rendered?: BlogPostEntry["rendered"]
 ): BlogPostEntry {
+  const fullPost = post as Partial<PostRow>;
   return {
     id: post.slug,
     slug: post.slug,
     filePath: `src/data/blog/${post.slug}.md`,
-    body: post.body,
-    rendered,
+    body: fullPost.body,
+    rendered:
+      rendered ??
+      (fullPost.body_html
+        ? {
+            html: fullPost.body_html,
+            metadata: { headings: parseHeadings(fullPost.headings) },
+          }
+        : undefined),
     data: {
       author: post.author || SITE.author,
-      pubDatetime: new Date(post.pubDatetime),
-      modDatetime: post.modDatetime ? new Date(post.modDatetime) : null,
+      pubDatetime: new Date(post.pub_datetime),
+      modDatetime: post.mod_datetime ? new Date(post.mod_datetime) : null,
       title: post.title,
-      featured: post.featured || undefined,
-      draft: post.draft || undefined,
+      featured: Boolean(post.featured) || undefined,
+      draft: Boolean(post.draft) || undefined,
       tags: postTags.length > 0 ? postTags : ["others"],
-      ogImage: post.ogImage || undefined,
-      coverImage: post.coverImage || undefined,
+      ogImage: post.og_image || undefined,
+      coverImage: post.cover_image || undefined,
       description: post.description,
-      canonicalURL: post.canonicalUrl || undefined,
-      hideEditPost: post.hideEditPost || undefined,
+      canonicalURL: post.canonical_url || undefined,
+      hideEditPost: Boolean(post.hide_edit_post) || undefined,
       timezone: post.timezone || undefined,
     },
   };
 }
 
-function getTagNamesByPostId() {
-  const db = getDb();
-  const allTags = db.select().from(tags).orderBy(asc(tags.name)).all();
-  const allPostsTags = db.select().from(postsTags).all();
-  const tagMap = new Map(allTags.map(tag => [tag.id, tag.name]));
+async function getTagNamesByPostId(db: D1Database, postIds: number[]) {
+  const postTags = await listTagNamesForPostIds(db, postIds);
   const postTagMap = new Map<number, string[]>();
 
-  for (const row of allPostsTags) {
-    const tagName = tagMap.get(row.tagId);
-    if (!tagName) continue;
-    const postTagNames = postTagMap.get(row.postId) ?? [];
-    postTagNames.push(tagName);
-    postTagMap.set(row.postId, postTagNames);
+  for (const row of postTags) {
+    const postTagNames = postTagMap.get(row.post_id) ?? [];
+    postTagNames.push(row.name);
+    postTagMap.set(row.post_id, postTagNames);
   }
 
   return postTagMap;
 }
 
-export function getRuntimePosts(options: { includeDrafts?: boolean } = {}) {
-  const db = getDb();
-  const tagNamesByPostId = getTagNamesByPostId();
-  const entries = db
-    .select()
-    .from(posts)
-    .all()
-    .map(post => toEntry(post, tagNamesByPostId.get(post.id) ?? []));
-
-  return sortPosts(
-    options.includeDrafts ? entries : entries.filter(isPostPublished)
+export async function getRuntimePosts(
+  db: D1Database,
+  options: { includeDrafts?: boolean; limit?: number } = {}
+) {
+  const summaries = await listPostSummaries(db, options);
+  const tagNamesByPostId = await getTagNamesByPostId(
+    db,
+    summaries.map(post => post.id)
   );
+  const entries = summaries.map(post =>
+    toEntry(post, tagNamesByPostId.get(post.id) ?? [])
+  );
+
+  return options.includeDrafts ? entries : entries.filter(isPostPublished);
 }
 
-export async function getRuntimePost(slug: string) {
-  const db = getDb();
-  const post = db.select().from(posts).where(eq(posts.slug, slug)).get();
+export async function getRuntimePost(db: D1Database, slug: string) {
+  const post = await getPostWithTags(db, slug);
   if (!post) return null;
-
-  const rows = db
-    .select({ name: tags.name })
-    .from(postsTags)
-    .innerJoin(tags, eq(postsTags.tagId, tags.id))
-    .where(eq(postsTags.postId, post.id))
-    .orderBy(asc(tags.name))
-    .all();
 
   const entry = toEntry(
     post,
-    rows.map(row => row.name),
-    await renderMarkdown(post.body)
+    post.tags.map(tag => tag.name),
+    undefined
   );
 
   return isPostPublished(entry) ? entry : null;
@@ -178,6 +156,13 @@ export function getRuntimeTags(posts: BlogPostEntry[]) {
         self.findIndex(tag => tag.tag === value.tag) === index
     )
     .sort((tagA, tagB) => tagA.tag.localeCompare(tagB.tag));
+}
+
+export async function getRuntimeTopTags(db: D1Database, limit = 6) {
+  return (await listTopTags(db, limit)).map(tag => ({
+    tag: tag.slug,
+    tagName: tag.name,
+  }));
 }
 
 export function getRuntimePostsByTag(posts: BlogPostEntry[], tag: string) {

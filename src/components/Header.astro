@@ -7,7 +7,8 @@ import IconMenuDeep from "@/assets/icons/IconMenuDeep.svg";
 import IconRss from "@/assets/icons/IconRss.svg";
 import LinkButton from "./LinkButton.astro";
 import { SITE } from "@/config";
-import { getRuntimePosts, getRuntimeTags } from "@/utils/runtimePosts";
+import { getRuntimeTopTags } from "@/utils/runtimePosts";
+import { getD1 } from "@/utils/cloudflare";
 
 const { pathname } = Astro.url;
 
@@ -23,7 +24,12 @@ const isActive = (path: string) => {
 };
 
 // 获取所有 tags 用于导航栏显示
-const allTags = getRuntimeTags(getRuntimePosts());
+let allTags: Awaited<ReturnType<typeof getRuntimeTopTags>> = [];
+try {
+  allTags = await getRuntimeTopTags(getD1(Astro.locals), 6);
+} catch {
+  allTags = [];
+}
 
 // 选择最常用的几个 tags 显示在导航栏（最多显示6个）
 const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({

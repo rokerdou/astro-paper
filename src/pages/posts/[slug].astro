@@ -2,11 +2,13 @@
 export const prerender = false;
 import PostDetails from "@/layouts/PostDetails.astro";
 import { getRuntimePost, getRuntimePosts } from "@/utils/runtimePosts";
+import { getD1 } from "@/utils/cloudflare";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
 const slug = Astro.params.slug;
-const post = slug ? await getRuntimePost(slug) : null;
+const db = getD1(Astro.locals);
+const post = slug ? await getRuntimePost(db, slug) : null;
 
 if (!post) {
   if (slug && /^\d+$/.test(slug)) {
@@ -15,7 +17,7 @@ if (!post) {
   return Astro.redirect("/404");
 }
 
-const sortedPosts = getRuntimePosts();
+const sortedPosts = await getRuntimePosts(db);
 ---
 
 <PostDetails post={post} posts={sortedPosts} />

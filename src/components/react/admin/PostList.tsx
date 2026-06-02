@@ -45,7 +45,6 @@ function PostListInner() {
     setDeleting(slug);
     try {
       await deletePost.mutateAsync(slug);
-      fetch("/api/rebuild", { method: "POST" });
     } finally {
       setDeleting(null);
     }

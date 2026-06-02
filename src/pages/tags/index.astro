@@ -6,11 +6,12 @@ import Tag from "@/components/Tag.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import { getRuntimePosts, getRuntimeTags } from "@/utils/runtimePosts";
+import { getD1 } from "@/utils/cloudflare";
 import { SITE } from "@/config";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
-let tags = getRuntimeTags(getRuntimePosts());
+let tags = getRuntimeTags(await getRuntimePosts(getD1(Astro.locals)));
 ---
 
 <Layout title={`Tags | ${SITE.title}`}>

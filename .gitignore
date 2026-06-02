@@ -44,6 +44,7 @@ public/pagefind/
 # Tooling
 .netlify/
 .vercel/
+.wrangler/
 *.tsbuildinfo
 
 # Database

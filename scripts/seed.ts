@@ -1,96 +1,90 @@
-import Database from "better-sqlite3";
 import matter from "gray-matter";
 import fs from "node:fs";
 import path from "node:path";
 import kebabCase from "lodash.kebabcase";
+import { renderPostContent } from "../src/utils/renderPostContent";
 
-const DB_PATH = path.resolve("content.db");
 const BLOG_DIR = path.resolve("src/data/blog");
+const OUT_FILE = path.resolve("src/db/seed.sql");
 
 function slugifyStr(str: string) {
   return kebabCase(str);
 }
 
-function main() {
-  const db = new Database(DB_PATH);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-
-  const insertPost = db.prepare(`
-    INSERT INTO posts (slug, title, description, body, author, pub_datetime, mod_datetime, featured, draft, og_image, cover_image, canonical_url, hide_edit_post, timezone, created_at, updated_at)
-    VALUES (@slug, @title, @description, @body, @author, @pubDatetime, @modDatetime, @featured, @draft, @ogImage, @coverImage, @canonicalUrl, @hideEditPost, @timezone, @createdAt, @updatedAt)
-  `);
-
-  const findTagByName = db.prepare("SELECT id FROM tags WHERE name = ?");
-  const findTagBySlug = db.prepare("SELECT id FROM tags WHERE slug = ?");
-  const insertTag = db.prepare("INSERT INTO tags (name, slug) VALUES (@name, @slug)");
-  const insertPostTag = db.prepare("INSERT INTO posts_tags (post_id, tag_id) VALUES (@postId, @tagId)");
-
-  const seed = db.transaction(() => {
-    let postCount = 0;
-    let tagCount = 0;
-
-    function walkDir(dir: string) {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          walkDir(fullPath);
-        } else if (entry.isFile() && entry.name.endsWith(".md")) {
-          const raw = fs.readFileSync(fullPath, "utf-8");
-          const { data, content } = matter(raw);
-
-          const slug = data.slug || slugifyStr(path.basename(entry.name, ".md"));
-          const tags: string[] = data.tags || ["others"];
-
-          const now = new Date().toISOString();
-          const result = insertPost.run({
-            slug,
-            title: data.title || "",
-            description: data.description || "",
-            body: content,
-            author: data.author || "Sat Naing",
-            pubDatetime: data.pubDatetime ? new Date(data.pubDatetime).toISOString() : new Date().toISOString(),
-            modDatetime: data.modDatetime ? new Date(data.modDatetime).toISOString() : null,
-            featured: data.featured ? 1 : 0,
-            draft: data.draft ? 1 : 0,
-            ogImage: typeof data.ogImage === "string" ? data.ogImage : (data.ogImage?.src || null),
-            coverImage: data.coverImage || null,
-            canonicalUrl: data.canonicalURL || null,
-            hideEditPost: data.hideEditPost ? 1 : 0,
-            timezone: data.timezone || null,
-            createdAt: now,
-            updatedAt: now,
-          });
-
-          const postId = Number(result.lastInsertRowid);
-
-          for (const tagName of tags) {
-            const tagSlug = slugifyStr(tagName);
-            let tagRow = findTagByName.get(tagName) as { id: number } | undefined;
-            if (!tagRow) {
-              tagRow = findTagBySlug.get(tagSlug) as { id: number } | undefined;
-            }
-            if (!tagRow) {
-              const tagResult = insertTag.run({ name: tagName, slug: slugifyStr(tagName) });
-              tagRow = { id: Number(tagResult.lastInsertRowid) };
-              tagCount++;
-            }
-            insertPostTag.run({ postId, tagId: tagRow.id });
-          }
-
-          postCount++;
-          console.log(`  Migrated: ${slug}`);
-        }
-      }
-    }
-
-    walkDir(BLOG_DIR);
-    console.log(`\nDone: ${postCount} posts, ${tagCount} new tags.`);
-  });
-
-  seed();
-  db.close();
+function sqlString(value: string | null) {
+  if (value === null) return "NULL";
+  return `'${value.replaceAll("'", "''")}'`;
 }
 
-main();
+async function main() {
+  const statements: string[] = [
+    "PRAGMA foreign_keys = ON;",
+    "DELETE FROM posts_tags;",
+    "DELETE FROM posts;",
+    "DELETE FROM tags;",
+  ];
+  const knownTags = new Set<string>();
+
+  async function walkDir(dir: string) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walkDir(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
+        const raw = fs.readFileSync(fullPath, "utf-8");
+        const { data, content } = matter(raw);
+        const slug = data.slug || slugifyStr(path.basename(entry.name, ".md"));
+        const tagNames: string[] = data.tags || ["others"];
+        const now = new Date().toISOString();
+        const rendered = await renderPostContent(content);
+        const values = [
+          sqlString(slug),
+          sqlString(data.title || ""),
+          sqlString(data.description || ""),
+          sqlString(content),
+          sqlString(rendered.html),
+          sqlString(JSON.stringify(rendered.headings)),
+          sqlString(rendered.searchText),
+          sqlString(data.author || "Sat Naing"),
+          sqlString(data.pubDatetime ? new Date(data.pubDatetime).toISOString() : now),
+          sqlString(data.modDatetime ? new Date(data.modDatetime).toISOString() : null),
+          data.featured ? "1" : "0",
+          data.draft ? "1" : "0",
+          sqlString(typeof data.ogImage === "string" ? data.ogImage : data.ogImage?.src || null),
+          sqlString(data.coverImage || null),
+          sqlString(data.canonicalURL || null),
+          data.hideEditPost ? "1" : "0",
+          sqlString(data.timezone || null),
+          sqlString(now),
+          sqlString(now),
+        ];
+
+        statements.push(
+          `INSERT INTO posts (slug, title, description, body, body_html, headings, search_text, author, pub_datetime, mod_datetime, featured, draft, og_image, cover_image, canonical_url, hide_edit_post, timezone, created_at, updated_at) VALUES (${values.join(", ")});`
+        );
+
+        for (const tagName of tagNames) {
+          const tagSlug = slugifyStr(tagName);
+          if (!knownTags.has(tagSlug)) {
+            statements.push(
+              `INSERT OR IGNORE INTO tags (name, slug) VALUES (${sqlString(tagName)}, ${sqlString(tagSlug)});`
+            );
+            knownTags.add(tagSlug);
+          }
+          statements.push(
+            `INSERT OR IGNORE INTO posts_tags (post_id, tag_id) SELECT posts.id, tags.id FROM posts, tags WHERE posts.slug = ${sqlString(slug)} AND tags.slug = ${sqlString(tagSlug)};`
+          );
+        }
+
+        console.log(`Prepared: ${slug}`);
+      }
+    }
+  }
+
+  await walkDir(BLOG_DIR);
+  fs.writeFileSync(OUT_FILE, `${statements.join("\n")}\n`);
+  console.log(`\nWrote ${OUT_FILE}`);
+}
+
+await main();

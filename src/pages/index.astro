@@ -6,10 +6,11 @@ import Footer from "@/components/Footer.astro";
 import LinkButton from "@/components/LinkButton.astro";
 import Card from "@/components/Card.astro";
 import { getRuntimePosts } from "@/utils/runtimePosts";
+import { getD1 } from "@/utils/cloudflare";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
-const allPosts = getRuntimePosts().slice(0, 9); // 显示最新的9篇文章（3x3网格）
+const allPosts = await getRuntimePosts(getD1(Astro.locals), { limit: 9 }); // 显示最新的9篇文章（3x3网格）
 ---
 
 <Layout>

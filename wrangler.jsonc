@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "astro-paper",
+  "compatibility_date": "2026-05-31",
+  "pages_build_output_dir": "./dist",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "astro-paper",
+      "database_id": "e31dbee8-6535-4d3a-ab0e-907a40e73ba2",
+      "migrations_dir": "./src/db/migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "b04dd0cce77042d89b74eca301f13bd8"
+    }
+  ]
+}

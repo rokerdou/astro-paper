@@ -1,8 +1,9 @@
 allowBuilds:
-  better-sqlite3: true
   esbuild: true
+  sharp: true
+  workerd: true
 onlyBuiltDependencies:
   - "@tailwindcss/oxide"
   - esbuild
   - sharp
-  - better-sqlite3
+  - workerd

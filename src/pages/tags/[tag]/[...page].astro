@@ -12,13 +12,14 @@ import {
   getRuntimePostsByTag,
   getRuntimeTags,
 } from "@/utils/runtimePosts";
+import { getD1 } from "@/utils/cloudflare";
 import { SITE } from "@/config";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
 const params = Astro.params;
 const { tag } = params;
-const posts = getRuntimePosts();
+const posts = await getRuntimePosts(getD1(Astro.locals));
 const tagName = getRuntimeTags(posts).find(item => item.tag === tag)?.tagName;
 
 if (!tag || !tagName) {

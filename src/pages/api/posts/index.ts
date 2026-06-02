@@ -1,50 +1,57 @@
 import type { APIRoute } from "astro";
-import { getDb } from "@/db";
-import { posts, tags, postsTags } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  createPost,
+  listPosts,
+  listPostTags,
+  listTags,
+  replacePostTags,
+  toApiPost,
+} from "@/db/d1";
+import { getD1 } from "@/utils/cloudflare";
+import { renderPostContent } from "@/utils/renderPostContent";
 import { slugifyStr } from "@/utils/slugify";
 
 export const prerender = false;
 
-export const GET: APIRoute = async () => {
-  const db = getDb();
+export const GET: APIRoute = async ({ locals }) => {
+  const db = getD1(locals);
+  const allPosts = await listPosts(db);
+  const allTags = await listTags(db);
+  const allPostsTags = await listPostTags(db);
 
-  const allPosts = db.select().from(posts).all();
-  const allTags = db.select().from(tags).all();
-  const allPostsTags = db.select().from(postsTags).all();
-
-  const tagMap = new Map(allTags.map(t => [t.id, { id: t.id, name: t.name, slug: t.slug }]));
-
+  const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
   const postTagMap = new Map<number, typeof allTags>();
-  for (const pt of allPostsTags) {
-    const list = postTagMap.get(pt.postId) || [];
-    const tag = tagMap.get(pt.tagId);
+  for (const row of allPostsTags) {
+    const list = postTagMap.get(row.post_id) || [];
+    const tag = tagMap.get(row.tag_id);
     if (tag) list.push(tag);
-    postTagMap.set(pt.postId, list);
+    postTagMap.set(row.post_id, list);
   }
 
-  const result = allPosts.map(p => ({
-    ...p,
-    tags: postTagMap.get(p.id) || [],
-  }));
+  const result = allPosts.map(post =>
+    toApiPost(post, postTagMap.get(post.id) || [])
+  );
 
-  return new Response(JSON.stringify({ posts: result }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return Response.json({ posts: result });
 };
 
-export const POST: APIRoute = async ({ request }) => {
-  const db = getDb();
+export const POST: APIRoute = async ({ request, locals }) => {
+  const db = getD1(locals);
   const body = await request.json();
 
   const slug = body.slug || slugifyStr(body.title);
   const now = new Date().toISOString();
+  const sourceBody = body.body || "";
+  const rendered = await renderPostContent(sourceBody);
 
-  const result = db.insert(posts).values({
+  const post = await createPost(db, {
     slug,
     title: body.title,
     description: body.description || "",
-    body: body.body || "",
+    body: sourceBody,
+    bodyHtml: rendered.html,
+    headings: JSON.stringify(rendered.headings),
+    searchText: rendered.searchText,
     author: body.author || "",
     pubDatetime: body.pubDatetime || now,
     modDatetime: null,
@@ -57,23 +64,17 @@ export const POST: APIRoute = async ({ request }) => {
     timezone: body.timezone || null,
     createdAt: now,
     updatedAt: now,
-  }).returning().get();
+  });
 
-  const tagNames: string[] = body.tags || [];
-  const postTags: { id: number; name: string; slug: string }[] = [];
-
-  for (const tagName of tagNames) {
-    const tagSlug = slugifyStr(tagName);
-    let tag = db.select().from(tags).where(eq(tags.slug, tagSlug)).get();
-    if (!tag) {
-      tag = db.insert(tags).values({ name: tagName, slug: tagSlug }).returning().get();
-    }
-    db.insert(postsTags).values({ postId: result.id, tagId: tag.id }).run();
-    postTags.push({ id: tag.id, name: tag.name, slug: tag.slug });
+  if (!post) {
+    return Response.json({ error: "Unable to create post" }, { status: 500 });
   }
 
-  return new Response(JSON.stringify({ post: { ...result, tags: postTags } }), {
-    status: 201,
-    headers: { "Content-Type": "application/json" },
-  });
+  const tagNames: string[] = body.tags || [];
+  const postTags = await replacePostTags(db, post.id, tagNames, slugifyStr);
+
+  return Response.json(
+    { post: toApiPost(post, postTags) },
+    { status: 201 }
+  );
 };

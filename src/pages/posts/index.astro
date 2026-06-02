@@ -7,11 +7,17 @@ import Card from "@/components/Card.astro";
 import Pagination from "@/components/Pagination.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import { createRuntimePage, getRuntimePosts } from "@/utils/runtimePosts";
+import { getD1 } from "@/utils/cloudflare";
 import { SITE } from "@/config";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
-const page = createRuntimePage(getRuntimePosts(), 1, SITE.postPerPage, "/posts/page");
+const page = createRuntimePage(
+  await getRuntimePosts(getD1(Astro.locals)),
+  1,
+  SITE.postPerPage,
+  "/posts/page"
+);
 ---
 
 <Layout title={`Posts | ${SITE.title}`}>
