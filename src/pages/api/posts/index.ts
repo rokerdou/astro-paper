@@ -1,9 +1,9 @@
 import type { APIRoute } from "astro";
 import {
   createPost,
-  listPosts,
-  listPostTags,
-  listTags,
+  getPostStats,
+  listPostSummaries,
+  listTagNamesForPostIds,
   replacePostTags,
   toApiPost,
 } from "@/db/d1";
@@ -13,26 +13,50 @@ import { slugifyStr } from "@/utils/slugify";
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ locals }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
   const db = getD1(locals);
-  const allPosts = await listPosts(db);
-  const allTags = await listTags(db);
-  const allPostsTags = await listPostTags(db);
+  const url = new URL(request.url);
+  const requestedPage = Number(url.searchParams.get("page") ?? "1");
+  const requestedPageSize = Number(url.searchParams.get("pageSize") ?? "50");
+  const page = Number.isFinite(requestedPage) ? Math.max(requestedPage, 1) : 1;
+  const pageSize = Number.isFinite(requestedPageSize)
+    ? Math.min(Math.max(requestedPageSize, 1), 100)
+    : 50;
+  const offset = (page - 1) * pageSize;
+  const [posts, stats] = await Promise.all([
+    listPostSummaries(db, { includeDrafts: true, limit: pageSize, offset }),
+    getPostStats(db),
+  ]);
+  const postTags = await listTagNamesForPostIds(
+    db,
+    posts.map(post => post.id)
+  );
 
-  const tagMap = new Map(allTags.map(tag => [tag.id, tag]));
-  const postTagMap = new Map<number, typeof allTags>();
-  for (const row of allPostsTags) {
+  const postTagMap = new Map<number, { id: number; name: string; slug: string }[]>();
+  for (const row of postTags) {
     const list = postTagMap.get(row.post_id) || [];
-    const tag = tagMap.get(row.tag_id);
-    if (tag) list.push(tag);
+    list.push({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+    });
     postTagMap.set(row.post_id, list);
   }
 
-  const result = allPosts.map(post =>
+  const result = posts.map(post =>
     toApiPost(post, postTagMap.get(post.id) || [])
   );
 
-  return Response.json({ posts: result });
+  return Response.json({
+    posts: result,
+    pagination: {
+      page,
+      pageSize,
+      total: stats.total,
+      lastPage: Math.max(1, Math.ceil(stats.total / pageSize)),
+    },
+    stats,
+  });
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -43,6 +67,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const now = new Date().toISOString();
   const sourceBody = body.body || "";
   const rendered = await renderPostContent(sourceBody);
+  const pubDatetime = body.pubDatetime || now;
+  const modDatetime = null;
 
   const post = await createPost(db, {
     slug,
@@ -53,8 +79,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     headings: JSON.stringify(rendered.headings),
     searchText: rendered.searchText,
     author: body.author || "",
-    pubDatetime: body.pubDatetime || now,
-    modDatetime: null,
+    pubDatetime,
+    modDatetime,
+    sortDatetime: modDatetime || pubDatetime,
     featured: body.featured || false,
     draft: body.draft ?? true,
     ogImage: body.ogImage || null,

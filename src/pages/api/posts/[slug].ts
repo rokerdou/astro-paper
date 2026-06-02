@@ -35,6 +35,8 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
   const rendered =
     body.body !== undefined ? await renderPostContent(body.body) : null;
+  const pubDatetime = body.pubDatetime ?? existing.pub_datetime;
+  const modDatetime = body.modDatetime ?? existing.mod_datetime;
 
   await updatePostBySlug(db, slug, {
     ...(body.title !== undefined && { title: body.title }),
@@ -48,6 +50,9 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     ...(body.author !== undefined && { author: body.author }),
     ...(body.pubDatetime !== undefined && { pubDatetime: body.pubDatetime }),
     ...(body.modDatetime !== undefined && { modDatetime: body.modDatetime }),
+    ...((body.pubDatetime !== undefined || body.modDatetime !== undefined) && {
+      sortDatetime: modDatetime || pubDatetime,
+    }),
     ...(body.featured !== undefined && { featured: body.featured }),
     ...(body.draft !== undefined && { draft: body.draft }),
     ...(body.ogImage !== undefined && { ogImage: body.ogImage }),

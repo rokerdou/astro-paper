@@ -1,7 +1,10 @@
 ---
 export const prerender = false;
 import PostDetails from "@/layouts/PostDetails.astro";
-import { getRuntimePost, getRuntimePosts } from "@/utils/runtimePosts";
+import {
+  getRuntimeAdjacentPosts,
+  getRuntimePost,
+} from "@/utils/runtimePosts";
 import { getD1 } from "@/utils/cloudflare";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
@@ -17,7 +20,11 @@ if (!post) {
   return Astro.redirect("/404");
 }
 
-const sortedPosts = await getRuntimePosts(db);
+const adjacentPosts = await getRuntimeAdjacentPosts(db, post);
 ---
 
-<PostDetails post={post} posts={sortedPosts} />
+<PostDetails
+  post={post}
+  previousPost={adjacentPosts.previous}
+  nextPost={adjacentPosts.next}
+/>

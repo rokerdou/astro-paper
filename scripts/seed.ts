@@ -38,6 +38,8 @@ async function main() {
         const tagNames: string[] = data.tags || ["others"];
         const now = new Date().toISOString();
         const rendered = await renderPostContent(content);
+        const pubDatetime = data.pubDatetime ? new Date(data.pubDatetime).toISOString() : now;
+        const modDatetime = data.modDatetime ? new Date(data.modDatetime).toISOString() : null;
         const values = [
           sqlString(slug),
           sqlString(data.title || ""),
@@ -47,8 +49,9 @@ async function main() {
           sqlString(JSON.stringify(rendered.headings)),
           sqlString(rendered.searchText),
           sqlString(data.author || "Sat Naing"),
-          sqlString(data.pubDatetime ? new Date(data.pubDatetime).toISOString() : now),
-          sqlString(data.modDatetime ? new Date(data.modDatetime).toISOString() : null),
+          sqlString(pubDatetime),
+          sqlString(modDatetime),
+          sqlString(modDatetime || pubDatetime),
           data.featured ? "1" : "0",
           data.draft ? "1" : "0",
           sqlString(typeof data.ogImage === "string" ? data.ogImage : data.ogImage?.src || null),
@@ -61,7 +64,7 @@ async function main() {
         ];
 
         statements.push(
-          `INSERT INTO posts (slug, title, description, body, body_html, headings, search_text, author, pub_datetime, mod_datetime, featured, draft, og_image, cover_image, canonical_url, hide_edit_post, timezone, created_at, updated_at) VALUES (${values.join(", ")});`
+          `INSERT INTO posts (slug, title, description, body, body_html, headings, search_text, author, pub_datetime, mod_datetime, sort_datetime, featured, draft, og_image, cover_image, canonical_url, hide_edit_post, timezone, created_at, updated_at) VALUES (${values.join(", ")});`
         );
 
         for (const tagName of tagNames) {

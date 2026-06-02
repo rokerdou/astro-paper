@@ -29,13 +29,28 @@ export interface Post {
   updatedAt: string;
 }
 
-export function usePosts() {
+export interface PostsResponse {
+  posts: Post[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    lastPage: number;
+  };
+  stats: {
+    total: number;
+    published: number;
+    drafts: number;
+  };
+}
+
+export function usePosts(page = 1, pageSize = 50) {
   return useQuery({
-    queryKey: ["posts"],
+    queryKey: ["posts", page, pageSize],
     queryFn: async () => {
-      const res = await fetch(`${BASE}/api/posts`);
+      const res = await fetch(`${BASE}/api/posts?page=${page}&pageSize=${pageSize}`);
       const data = await res.json();
-      return data.posts as Post[];
+      return data as PostsResponse;
     },
   });
 }

@@ -21,10 +21,11 @@ import QueryProvider from "@/components/react/QueryProvider";
 
 export interface Props {
   post: BlogPostEntry;
-  posts: BlogPostEntry[];
+  previousPost?: BlogPostEntry | null;
+  nextPost?: BlogPostEntry | null;
 }
 
-const { post, posts } = Astro.props;
+const { post, previousPost, nextPost: followingPost } = Astro.props;
 
 const {
   title,
@@ -75,17 +76,20 @@ const layoutProps = {
 
 /* ========== Prev/Next Posts ========== */
 
-const allPosts = posts.map(({ data: { title }, id, filePath }) => ({
-  id,
-  title,
-  filePath,
-}));
-
-const currentPostIndex = allPosts.findIndex(a => a.id === post.id);
-
-const prevPost = currentPostIndex !== 0 ? allPosts[currentPostIndex - 1] : null;
-const nextPost =
-  currentPostIndex !== allPosts.length ? allPosts[currentPostIndex + 1] : null;
+const prevPost = previousPost
+  ? {
+      id: previousPost.id,
+      title: previousPost.data.title,
+      filePath: previousPost.filePath,
+    }
+  : null;
+const nextPost = followingPost
+  ? {
+      id: followingPost.id,
+      title: followingPost.data.title,
+      filePath: followingPost.filePath,
+    }
+  : null;
 ---
 
 <Layout {...layoutProps}>

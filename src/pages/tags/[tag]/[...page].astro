@@ -6,12 +6,7 @@ import Footer from "@/components/Footer.astro";
 import Card from "@/components/Card.astro";
 import Pagination from "@/components/Pagination.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import {
-  createRuntimePage,
-  getRuntimePosts,
-  getRuntimePostsByTag,
-  getRuntimeTags,
-} from "@/utils/runtimePosts";
+import { getRuntimeTagPostPage } from "@/utils/runtimePosts";
 import { getD1 } from "@/utils/cloudflare";
 import { SITE } from "@/config";
 
@@ -19,23 +14,24 @@ Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
 const params = Astro.params;
 const { tag } = params;
-const posts = await getRuntimePosts(getD1(Astro.locals));
-const tagName = getRuntimeTags(posts).find(item => item.tag === tag)?.tagName;
-
-if (!tag || !tagName) {
-  return Astro.redirect("/404");
-}
-
 const pageParam = Array.isArray(Astro.params.page)
   ? Astro.params.page[0]
   : Astro.params.page;
 const currentPage = Number(pageParam ?? "1");
-const page = createRuntimePage(
-  getRuntimePostsByTag(posts, tag),
-  Number.isFinite(currentPage) ? currentPage : 1,
-  SITE.postPerPage,
-  `/tags/${tag}`
-);
+const result = tag
+  ? await getRuntimeTagPostPage(
+      getD1(Astro.locals),
+      tag,
+      Number.isFinite(currentPage) ? currentPage : 1,
+      SITE.postPerPage
+    )
+  : null;
+
+if (!tag || !result) {
+  return Astro.redirect("/404");
+}
+
+const { tagName, page } = result;
 ---
 
 <Layout title={`Tag: ${tagName} | ${SITE.title}`}>

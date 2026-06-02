@@ -29,16 +29,17 @@ function Loading() {
 }
 
 function PostListInner() {
-  const { data: posts, isLoading } = usePosts();
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = usePosts(page, 50);
   const deletePost = useDeletePost();
   const [deleting, setDeleting] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
   if (isLoading) return <Loading />;
 
-  const all = posts || [];
-  const published = all.filter(p => !p.draft).length;
-  const drafts = all.filter(p => p.draft).length;
+  const all = data?.posts || [];
+  const published = data?.stats.published ?? 0;
+  const drafts = data?.stats.drafts ?? 0;
 
   const handleDelete = async (slug: string, title: string) => {
     if (!confirm(`Delete "${title}"?`)) return;
@@ -57,7 +58,7 @@ function PostListInner() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem", marginBottom: "1.5rem" }}>
         {[
-          { label: "Total", value: all.length, color: "var(--foreground)" },
+          { label: "Total", value: data?.stats.total ?? 0, color: "var(--foreground)" },
           { label: "Published", value: published, color: "#16a34a" },
           { label: "Drafts", value: drafts, color: "#d97706" },
         ].map(stat => (
@@ -210,6 +211,40 @@ function PostListInner() {
           fontFamily: vars.font,
         }}>
           No posts yet. Create your first post.
+        </div>
+      )}
+
+      {(data?.pagination.lastPage ?? 1) > 1 && (
+        <div style={{
+          display: "flex", justifyContent: "center", alignItems: "center",
+          gap: "0.5rem", marginTop: "1.5rem", fontFamily: vars.font,
+        }}>
+          <button
+            type="button"
+            onClick={() => setPage(current => Math.max(1, current - 1))}
+            disabled={page <= 1}
+            style={{ ...btnSecondary, opacity: page <= 1 ? 0.5 : 1 }}
+          >
+            Prev
+          </button>
+          <span style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
+            {data?.pagination.page ?? page} / {data?.pagination.lastPage ?? 1}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              setPage(current =>
+                Math.min(data?.pagination.lastPage ?? current, current + 1)
+              )
+            }
+            disabled={page >= (data?.pagination.lastPage ?? 1)}
+            style={{
+              ...btnSecondary,
+              opacity: page >= (data?.pagination.lastPage ?? 1) ? 0.5 : 1,
+            }}
+          >
+            Next
+          </button>
         </div>
       )}
     </div>

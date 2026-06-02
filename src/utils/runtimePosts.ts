@@ -1,8 +1,14 @@
 import type { MarkdownHeading } from "astro";
 import { SITE } from "@/config";
 import {
+  countPostSummaries,
+  countPostSummariesByTag,
+  findTagBySlug,
+  getAdjacentPostSummaries,
   getPostWithTags,
+  listPublishedTags,
   listPostSummaries,
+  listPostSummariesByTag,
   listTagNamesForPostIds,
   listTopTags,
   type PostRow,
@@ -27,6 +33,7 @@ export interface BlogPostData {
 }
 
 export interface BlogPostEntry {
+  dbId?: number;
   id: string;
   slug: string;
   filePath?: string;
@@ -75,6 +82,7 @@ function toEntry(
 ): BlogPostEntry {
   const fullPost = post as Partial<PostRow>;
   return {
+    dbId: post.id,
     id: post.slug,
     slug: post.slug,
     filePath: `src/data/blog/${post.slug}.md`,
@@ -134,6 +142,101 @@ export async function getRuntimePosts(
   return options.includeDrafts ? entries : entries.filter(isPostPublished);
 }
 
+async function attachTags(db: D1Database, summaries: PostSummaryRow[]) {
+  const tagNamesByPostId = await getTagNamesByPostId(
+    db,
+    summaries.map(post => post.id)
+  );
+
+  return summaries.map(post => toEntry(post, tagNamesByPostId.get(post.id) ?? []));
+}
+
+function createRuntimePagination<T>(
+  data: T[],
+  total: number,
+  currentPage: number,
+  pageSize: number,
+  basePath: string
+) {
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  const pageNumber = Math.min(Math.max(currentPage, 1), lastPage);
+  const normalizedBase = basePath.endsWith("/")
+    ? basePath.slice(0, -1)
+    : basePath;
+  const urlForPage = (page: number) =>
+    page === 1 && normalizedBase.endsWith("/page")
+      ? "/posts/"
+      : page === 1
+        ? `${normalizedBase}/`
+        : `${normalizedBase}/${page}/`;
+
+  return {
+    data,
+    currentPage: pageNumber,
+    lastPage,
+    url: {
+      current: urlForPage(pageNumber),
+      prev:
+        pageNumber > 1
+          ? pageNumber === 2 && normalizedBase.endsWith("/page")
+            ? "/posts/"
+            : urlForPage(pageNumber - 1)
+          : undefined,
+      next: pageNumber < lastPage ? urlForPage(pageNumber + 1) : undefined,
+    },
+  };
+}
+
+export async function getRuntimePostPage(
+  db: D1Database,
+  currentPage: number,
+  pageSize: number,
+  basePath = "/posts/page"
+) {
+  const total = await countPostSummaries(db);
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  const pageNumber = Math.min(Math.max(currentPage, 1), lastPage);
+  const offset = (pageNumber - 1) * pageSize;
+  const summaries = await listPostSummaries(db, { limit: pageSize, offset });
+
+  return createRuntimePagination(
+    await attachTags(db, summaries),
+    total,
+    pageNumber,
+    pageSize,
+    basePath
+  );
+}
+
+export async function getRuntimeTagPostPage(
+  db: D1Database,
+  tag: string,
+  currentPage: number,
+  pageSize: number
+) {
+  const tagRow = await findTagBySlug(db, tag);
+  if (!tagRow) return null;
+
+  const total = await countPostSummariesByTag(db, tag);
+  if (total === 0) return null;
+
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  const pageNumber = Math.min(Math.max(currentPage, 1), lastPage);
+  const offset = (pageNumber - 1) * pageSize;
+  const summaries = await listPostSummariesByTag(db, tag, { limit: pageSize, offset });
+
+  return {
+    tagName: tagRow.name,
+    page: createRuntimePagination(
+      await attachTags(db, summaries),
+      total,
+      pageNumber,
+      pageSize,
+      `/tags/${tag}`
+    ),
+  };
+}
+
 export async function getRuntimePost(db: D1Database, slug: string) {
   const post = await getPostWithTags(db, slug);
   if (!post) return null;
@@ -145,6 +248,22 @@ export async function getRuntimePost(db: D1Database, slug: string) {
   );
 
   return isPostPublished(entry) ? entry : null;
+}
+
+export async function getRuntimeAdjacentPosts(
+  db: D1Database,
+  post: BlogPostEntry
+) {
+  const adjacent = await getAdjacentPostSummaries(
+    db,
+    new Date(post.data.modDatetime ?? post.data.pubDatetime).toISOString(),
+    post.dbId ?? 0
+  );
+
+  return {
+    previous: adjacent.previous ? toEntry(adjacent.previous, []) : null,
+    next: adjacent.next ? toEntry(adjacent.next, []) : null,
+  };
 }
 
 export function getRuntimeTags(posts: BlogPostEntry[]) {
@@ -160,6 +279,13 @@ export function getRuntimeTags(posts: BlogPostEntry[]) {
 
 export async function getRuntimeTopTags(db: D1Database, limit = 6) {
   return (await listTopTags(db, limit)).map(tag => ({
+    tag: tag.slug,
+    tagName: tag.name,
+  }));
+}
+
+export async function getRuntimePublishedTags(db: D1Database) {
+  return (await listPublishedTags(db)).map(tag => ({
     tag: tag.slug,
     tagName: tag.name,
   }));
