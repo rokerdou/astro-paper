@@ -6,7 +6,7 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Card from "@/components/Card.astro";
 import getPostsByGroupCondition from "@/utils/getPostsByGroupCondition";
-import { getRuntimePosts } from "@/utils/runtimePosts";
+import { getRuntimeArchivePosts } from "@/utils/runtimePosts";
 import { getD1 } from "@/utils/cloudflare";
 import { SITE } from "@/config";
 
@@ -17,7 +17,7 @@ if (!SITE.showArchives) {
   return Astro.redirect("/404");
 }
 
-const posts = await getRuntimePosts(getD1(Astro.locals));
+const posts = await getRuntimeArchivePosts(getD1(Astro.locals));
 
 const months = [
   "January",

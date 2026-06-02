@@ -53,6 +53,13 @@ export interface TopTagRow extends TagRow {
   post_count: number;
 }
 
+export interface SearchPostRow {
+  slug: string;
+  title: string;
+  description: string;
+  search_text: string;
+}
+
 export function toApiPost(
   post: PostRow | PostWithTags | PostSummaryRow,
   tags: TagRow[] = []
@@ -119,12 +126,18 @@ export async function listPosts(db: D1Database) {
   return result.results ?? [];
 }
 
-function publishedWhere(includeDrafts?: boolean) {
-  return includeDrafts ? "" : "WHERE draft = 0 AND pub_datetime <= ?";
+function nowWithScheduledMargin() {
+  return new Date().toISOString();
+}
+
+function publishedWhere(includeDrafts?: boolean, prefix = "") {
+  return includeDrafts
+    ? ""
+    : `WHERE ${prefix}draft = 0 AND ${prefix}pub_datetime <= ?`;
 }
 
 function publishedBindings(includeDrafts?: boolean) {
-  return includeDrafts ? [] : [new Date().toISOString()];
+  return includeDrafts ? [] : [nowWithScheduledMargin()];
 }
 
 export async function listPostSummaries(
@@ -156,6 +169,25 @@ export async function listPostSummaries(
     values.length > 0
       ? await statement.bind(...values).all<PostSummaryRow>()
       : await statement.all<PostSummaryRow>();
+
+  return result.results ?? [];
+}
+
+export async function listArchivePostSummaries(db: D1Database) {
+  const result = await db
+    .prepare(
+      `SELECT
+        id, slug, title, description, author, pub_datetime, mod_datetime,
+        sort_datetime,
+        featured, draft, og_image, cover_image, canonical_url, hide_edit_post,
+        timezone, created_at, updated_at
+       FROM posts
+       WHERE draft = 0
+         AND pub_datetime <= ?
+       ORDER BY pub_datetime DESC, id DESC`
+    )
+    .bind(nowWithScheduledMargin())
+    .all<PostSummaryRow>();
 
   return result.results ?? [];
 }
@@ -201,16 +233,12 @@ export async function listTags(db: D1Database) {
 export async function listPublishedTags(db: D1Database) {
   const result = await db
     .prepare(
-      `SELECT tags.id, tags.name, tags.slug, COUNT(posts_tags.post_id) AS post_count
+      `SELECT tags.id, tags.name, tags.slug, tag_post_counts.post_count
        FROM tags
-       INNER JOIN posts_tags ON posts_tags.tag_id = tags.id
-       INNER JOIN posts ON posts.id = posts_tags.post_id
-       WHERE posts.draft = 0
-         AND posts.pub_datetime <= ?
-       GROUP BY tags.id, tags.name, tags.slug
+       INNER JOIN tag_post_counts ON tag_post_counts.tag_id = tags.id
+       WHERE tag_post_counts.post_count > 0
        ORDER BY tags.name ASC`
     )
-    .bind(new Date().toISOString())
     .all<TopTagRow>();
   return result.results ?? [];
 }
@@ -218,17 +246,14 @@ export async function listPublishedTags(db: D1Database) {
 export async function listTopTags(db: D1Database, limit = 6) {
   const result = await db
     .prepare(
-      `SELECT tags.id, tags.name, tags.slug, COUNT(posts_tags.post_id) AS post_count
+      `SELECT tags.id, tags.name, tags.slug, tag_post_counts.post_count
        FROM tags
-       INNER JOIN posts_tags ON posts_tags.tag_id = tags.id
-       INNER JOIN posts ON posts.id = posts_tags.post_id
-       WHERE posts.draft = 0
-         AND posts.pub_datetime <= ?
-       GROUP BY tags.id, tags.name, tags.slug
-       ORDER BY post_count DESC, tags.name ASC
+       INNER JOIN tag_post_counts ON tag_post_counts.tag_id = tags.id
+       WHERE tag_post_counts.post_count > 0
+       ORDER BY tag_post_counts.post_count DESC, tags.name ASC
        LIMIT ?`
     )
-    .bind(new Date().toISOString(), limit)
+    .bind(limit)
     .all<TopTagRow>();
 
   return result.results ?? [];
@@ -264,7 +289,7 @@ export async function listPostSummariesByTag(
 ) {
   const limit = options.limit ? "LIMIT ?" : "";
   const offset = options.offset ? "OFFSET ?" : "";
-  const values: unknown[] = [tagSlug, new Date().toISOString()];
+  const values: unknown[] = [tagSlug, nowWithScheduledMargin()];
   if (options.limit) values.push(options.limit);
   if (options.offset) values.push(options.offset);
 
@@ -276,9 +301,10 @@ export async function listPostSummariesByTag(
         posts.featured, posts.draft, posts.og_image, posts.cover_image,
         posts.canonical_url, posts.hide_edit_post, posts.timezone,
         posts.created_at, posts.updated_at
-       FROM posts
-       INNER JOIN posts_tags ON posts_tags.post_id = posts.id
-       INNER JOIN tags ON tags.id = posts_tags.tag_id
+       FROM tags
+       INNER JOIN posts_tags INDEXED BY idx_posts_tags_lookup
+         ON posts_tags.tag_id = tags.id
+       INNER JOIN posts ON posts.id = posts_tags.post_id
        WHERE tags.slug = ?
          AND posts.draft = 0
          AND posts.pub_datetime <= ?
@@ -296,17 +322,40 @@ export async function countPostSummariesByTag(db: D1Database, tagSlug: string) {
   const row = await db
     .prepare(
       `SELECT COUNT(*) AS count
-       FROM posts
-       INNER JOIN posts_tags ON posts_tags.post_id = posts.id
-       INNER JOIN tags ON tags.id = posts_tags.tag_id
+       FROM tags
+       INNER JOIN posts_tags INDEXED BY idx_posts_tags_lookup
+         ON posts_tags.tag_id = tags.id
+       INNER JOIN posts ON posts.id = posts_tags.post_id
        WHERE tags.slug = ?
          AND posts.draft = 0
          AND posts.pub_datetime <= ?`
     )
-    .bind(tagSlug, new Date().toISOString())
+    .bind(tagSlug, nowWithScheduledMargin())
     .first<{ count: number }>();
 
   return row?.count ?? 0;
+}
+
+export async function refreshTagPostCounts(db: D1Database) {
+  const now = nowWithScheduledMargin();
+  await db.batch([
+    db.prepare("DELETE FROM tag_post_counts"),
+    db
+      .prepare(
+        `INSERT INTO tag_post_counts (tag_id, post_count, updated_at)
+         SELECT
+           tags.id,
+           COUNT(posts.id) AS post_count,
+           ? AS updated_at
+         FROM tags
+         LEFT JOIN posts_tags ON posts_tags.tag_id = tags.id
+         LEFT JOIN posts ON posts.id = posts_tags.post_id
+           AND posts.draft = 0
+           AND posts.pub_datetime <= ?
+         GROUP BY tags.id`
+      )
+      .bind(now, now),
+  ]);
 }
 
 export async function getPostBySlug(db: D1Database, slug: string) {
@@ -339,7 +388,7 @@ export async function getAdjacentPostSummaries(
   sortDatetime: string,
   id: number
 ) {
-  const publishedAt = new Date().toISOString();
+  const publishedAt = nowWithScheduledMargin();
   const previous = await db
     .prepare(
       `SELECT
@@ -373,6 +422,52 @@ export async function getAdjacentPostSummaries(
     .first<PostSummaryRow>();
 
   return { previous, next };
+}
+
+export async function searchPublishedPosts(
+  db: D1Database,
+  query: string,
+  limit = 20
+) {
+  const normalizedQuery = query.trim().replace(/\s+/g, " ");
+  if (!normalizedQuery) return [];
+
+  const escapedQuery = normalizedQuery.replace(/[\\%_]/g, value => `\\${value}`);
+  const pattern = `%${escapedQuery}%`;
+
+  const result = await db
+    .prepare(
+      `SELECT slug, title, description, search_text
+       FROM posts
+       WHERE draft = 0
+         AND pub_datetime <= ?
+         AND (
+           title LIKE ? ESCAPE '\\'
+           OR description LIKE ? ESCAPE '\\'
+           OR search_text LIKE ? ESCAPE '\\'
+         )
+       ORDER BY
+         CASE
+           WHEN title LIKE ? ESCAPE '\\' THEN 0
+           WHEN description LIKE ? ESCAPE '\\' THEN 1
+           ELSE 2
+         END,
+         sort_datetime DESC,
+         id DESC
+       LIMIT ?`
+    )
+    .bind(
+      nowWithScheduledMargin(),
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      limit
+    )
+    .all<SearchPostRow>();
+
+  return result.results ?? [];
 }
 
 export async function createPost(db: D1Database, input: PostInput) {

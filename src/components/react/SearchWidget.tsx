@@ -4,18 +4,13 @@ interface SearchResult {
   url: string;
   title: string;
   excerpt: string;
-  sub_results?: { url: string; title: string; excerpt: string }[];
-}
-
-interface PagefindInstance {
-  search: (query: string) => Promise<{ results: { data: () => Promise<{ url: string; meta: { title: string }; excerpt: string; sub_results?: { url: string; title: string; excerpt: string }[] }> }[] }>;
 }
 
 export default function SearchWidget() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const pagefindRef = useRef<PagefindInstance | null>(null);
+  const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -27,51 +22,36 @@ export default function SearchWidget() {
     }
   }, []);
 
-  const loadPagefind = useCallback(async (): Promise<PagefindInstance | null> => {
-    if (pagefindRef.current) return pagefindRef.current;
-    try {
-      // @ts-expect-error — Pagefind is loaded at build time, dynamic path to avoid Rollup resolution
-      const pagefind = await import(/* @vite-ignore */ "/pagefind/pagefind.js");
-      await pagefind.init();
-      pagefindRef.current = pagefind;
-      return pagefind;
-    } catch {
-      console.warn("Pagefind not available. Run `pnpm build` first.");
-      return null;
-    }
-  }, []);
-
   const doSearch = useCallback(async (term: string) => {
     if (!term.trim()) {
       setResults([]);
+      setError("");
       return;
     }
     setLoading(true);
-    const pf = await loadPagefind();
-    if (!pf) {
+    setError("");
+    try {
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(term.trim())}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Search request failed");
+      }
+
+      const data = (await response.json()) as { results: SearchResult[] };
+      setResults(data.results);
+    } catch {
+      setResults([]);
+      setError("Search is temporarily unavailable.");
+    } finally {
       setLoading(false);
-      return;
     }
-    const search = await pf.search(term);
-    const data = await Promise.all(search.results.map(r => r.data()));
-    setResults(
-      data.map(d => ({
-        url: d.url,
-        title: d.meta.title,
-        excerpt: d.excerpt,
-        sub_results: d.sub_results?.map(sr => ({
-          url: sr.url,
-          title: sr.title,
-          excerpt: sr.excerpt,
-        })),
-      })),
-    );
-    setLoading(false);
 
     const params = new URLSearchParams(window.location.search);
     params.set("q", term);
     history.replaceState(history.state, "", "?" + params.toString());
-  }, [loadPagefind]);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -88,37 +68,8 @@ export default function SearchWidget() {
     }
   };
 
-  const isDev = import.meta.env.DEV;
-
   return (
     <div className="search-widget">
-      {isDev && (
-        <div
-          style={{
-            background: "var(--border)",
-            borderRadius: "0.375rem",
-            padding: "1rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <p>
-            <strong>DEV mode Warning!</strong> You need to build the project at
-            least once to see search results during development.
-          </p>
-          <code
-            style={{
-              display: "block",
-              background: "#000",
-              color: "#fff",
-              padding: "0.25rem 0.5rem",
-              borderRadius: "0.25rem",
-            }}
-          >
-            pnpm run build
-          </code>
-        </div>
-      )}
-
       <div
         style={{
           display: "flex",
@@ -161,6 +112,10 @@ export default function SearchWidget() {
         </button>
       </div>
 
+      {error && (
+        <p style={{ color: "var(--accent)", marginBottom: "1rem" }}>{error}</p>
+      )}
+
       <div>
         {results.map(r => (
           <article
@@ -187,26 +142,9 @@ export default function SearchWidget() {
                 color: "var(--foreground)",
                 opacity: 0.75,
               }}
-              dangerouslySetInnerHTML={{ __html: r.excerpt }}
-            />
-            {r.sub_results && r.sub_results.length > 0 && (
-              <ul style={{ marginTop: "0.5rem", paddingLeft: "1rem" }}>
-                {r.sub_results.map(sr => (
-                  <li key={sr.url}>
-                    <a
-                      href={sr.url}
-                      style={{
-                        color: "var(--accent)",
-                        fontSize: "0.875rem",
-                        textDecoration: "none",
-                      }}
-                    >
-                      {sr.title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
+            >
+              {r.excerpt}
+            </p>
           </article>
         ))}
       </div>

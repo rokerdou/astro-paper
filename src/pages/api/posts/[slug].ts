@@ -2,13 +2,15 @@ import type { APIRoute } from "astro";
 import {
   deletePostBySlug,
   getPostBySlug,
+  getTagsForPost,
   getPostWithTags,
+  refreshTagPostCounts,
   replacePostTags,
   toApiPost,
   updatePostBySlug,
 } from "@/db/d1";
 import { getD1 } from "@/utils/cloudflare";
-import { renderPostContent } from "@/utils/renderPostContent";
+import { purgePublicCache } from "@/utils/cache";
 import { slugifyStr } from "@/utils/slugify";
 
 export const prerender = false;
@@ -33,8 +35,11 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
-  const rendered =
-    body.body !== undefined ? await renderPostContent(body.body) : null;
+  const rendered = body.body !== undefined
+    ? await import("@/utils/renderPostContent").then(({ renderPostContent }) =>
+        renderPostContent(body.body)
+      )
+    : null;
   const pubDatetime = body.pubDatetime ?? existing.pub_datetime;
   const modDatetime = body.modDatetime ?? existing.mod_datetime;
 
@@ -62,15 +67,24 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     updatedAt: now,
   });
 
-  if (body.tags !== undefined) {
-    await replacePostTags(db, existing.id, body.tags, slugifyStr);
-  }
+  const oldTags = body.tags !== undefined ? await getTagsForPost(db, existing.id) : [];
+  const newTags =
+    body.tags !== undefined
+      ? await replacePostTags(db, existing.id, body.tags, slugifyStr)
+      : [];
 
   const updated = await getPostWithTags(db, slug);
+  await refreshTagPostCounts(db);
+  await purgePublicCache(request, [
+    `/posts/${slug}/`,
+    ...oldTags.map(tag => `/tags/${tag.slug}/`),
+    ...newTags.map(tag => `/tags/${tag.slug}/`),
+  ]);
+
   return Response.json({ post: updated ? toApiPost(updated) : null });
 };
 
-export const DELETE: APIRoute = async ({ params, locals }) => {
+export const DELETE: APIRoute = async ({ params, request, locals }) => {
   const db = getD1(locals);
   const slug = params.slug!;
 
@@ -79,6 +93,13 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
+  const oldTags = await getTagsForPost(db, existing.id);
   await deletePostBySlug(db, slug);
+  await refreshTagPostCounts(db);
+  await purgePublicCache(request, [
+    `/posts/${slug}/`,
+    ...oldTags.map(tag => `/tags/${tag.slug}/`),
+  ]);
+
   return Response.json({ success: true });
 };

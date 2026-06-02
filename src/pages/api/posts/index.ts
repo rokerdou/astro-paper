@@ -4,11 +4,12 @@ import {
   getPostStats,
   listPostSummaries,
   listTagNamesForPostIds,
+  refreshTagPostCounts,
   replacePostTags,
   toApiPost,
 } from "@/db/d1";
 import { getD1 } from "@/utils/cloudflare";
-import { renderPostContent } from "@/utils/renderPostContent";
+import { purgePublicCache } from "@/utils/cache";
 import { slugifyStr } from "@/utils/slugify";
 
 export const prerender = false;
@@ -66,6 +67,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const slug = body.slug || slugifyStr(body.title);
   const now = new Date().toISOString();
   const sourceBody = body.body || "";
+  const { renderPostContent } = await import("@/utils/renderPostContent");
   const rendered = await renderPostContent(sourceBody);
   const pubDatetime = body.pubDatetime || now;
   const modDatetime = null;
@@ -99,6 +101,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const tagNames: string[] = body.tags || [];
   const postTags = await replacePostTags(db, post.id, tagNames, slugifyStr);
+  await refreshTagPostCounts(db);
+  await purgePublicCache(request, [
+    `/posts/${slug}/`,
+    ...postTags.map(tag => `/tags/${tag.slug}/`),
+  ]);
 
   return Response.json(
     { post: toApiPost(post, postTags) },

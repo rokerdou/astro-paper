@@ -6,6 +6,7 @@ import {
   findTagBySlug,
   getAdjacentPostSummaries,
   getPostWithTags,
+  listArchivePostSummaries,
   listPublishedTags,
   listPostSummaries,
   listPostSummariesByTag,
@@ -140,6 +141,11 @@ export async function getRuntimePosts(
   );
 
   return options.includeDrafts ? entries : entries.filter(isPostPublished);
+}
+
+export async function getRuntimeArchivePosts(db: D1Database) {
+  const summaries = await listArchivePostSummaries(db);
+  return summaries.map(post => toEntry(post, []));
 }
 
 async function attachTags(db: D1Database, summaries: PostSummaryRow[]) {
