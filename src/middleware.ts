@@ -1,7 +1,12 @@
 import { defineMiddleware } from "astro:middleware";
 
 const PUBLIC_CACHE_TTL = 30;
-const ADMIN_PATHS = [/^\/admin(?:\/|$)/, /^\/api\/posts(?:\/|$)/, /^\/api\/tags(?:\/|$)/];
+const ADMIN_PATHS = [
+  /^\/admin(?:\/|$)/,
+  /^\/api\/comments(?:\/|$)/,
+  /^\/api\/posts(?:\/|$)/,
+  /^\/api\/tags(?:\/|$)/,
+];
 const CACHEABLE_PATHS = [
   /^\/$/,
   /^\/posts\/?$/,
@@ -37,6 +42,13 @@ function isCacheableRequest(request: Request) {
 
 function isAdminRequest(request: Request) {
   const url = new URL(request.url);
+  if (
+    /^\/api\/posts\/[^/]+\/comments\/?$/.test(url.pathname) &&
+    (request.method === "GET" || request.method === "POST")
+  ) {
+    return false;
+  }
+
   return ADMIN_PATHS.some(pattern => pattern.test(url.pathname));
 }
 

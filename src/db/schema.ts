@@ -1,4 +1,11 @@
-import { sqliteTable, text, integer, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  uniqueIndex,
+  index,
+  type AnySQLiteColumn,
+} from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 
 export const posts = sqliteTable("posts", {
@@ -36,8 +43,36 @@ export const postsTags = sqliteTable("posts_tags", {
   tagId: integer("tag_id").notNull().references(() => tags.id, { onDelete: "cascade" }),
 });
 
+export const comments = sqliteTable("comments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  postId: integer("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  parentId: integer("parent_id").references(
+    (): AnySQLiteColumn => comments.id,
+    { onDelete: "cascade" }
+  ),
+  authorName: text("author_name").notNull(),
+  authorEmailHash: text("author_email_hash"),
+  content: text("content").notNull(),
+  status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  ipHash: text("ip_hash"),
+  userAgentHash: text("user_agent_hash"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+}, (table) => [
+  index("idx_comments_post_status_created").on(
+    table.postId,
+    table.status,
+    table.parentId,
+    table.createdAt,
+    table.id
+  ),
+  index("idx_comments_parent").on(table.parentId),
+  index("idx_comments_moderation").on(table.status, table.createdAt, table.id),
+]);
+
 export const postsRelations = relations(posts, ({ many }) => ({
   postsTags: many(postsTags),
+  comments: many(comments),
 }));
 
 export const tagsRelations = relations(tags, ({ many }) => ({
@@ -53,4 +88,16 @@ export const postsTagsRelations = relations(postsTags, ({ one }) => ({
     fields: [postsTags.tagId],
     references: [tags.id],
   }),
+}));
+
+export const commentsRelations = relations(comments, ({ one, many }) => ({
+  post: one(posts, {
+    fields: [comments.postId],
+    references: [posts.id],
+  }),
+  parent: one(comments, {
+    fields: [comments.parentId],
+    references: [comments.id],
+  }),
+  replies: many(comments),
 }));

@@ -4,6 +4,7 @@ interface CloudflareEnv {
   DB: D1Database;
   ADMIN_USERNAME?: string;
   ADMIN_PASSWORD?: string;
+  COMMENT_HASH_SECRET?: string;
 }
 
 declare global {
@@ -28,8 +29,10 @@ declare global {
   }
 }
 
+/* eslint-disable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars */
 declare namespace App {
   interface Locals extends Runtime<CloudflareEnv> {}
 }
+/* eslint-enable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars */
 
 export {};

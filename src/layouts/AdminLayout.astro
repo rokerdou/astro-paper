@@ -5,13 +5,15 @@ import "@/styles/global.css";
 
 export interface Props {
   title?: string;
-  activeNav?: "posts" | "tags";
+  activeNav?: "posts" | "tags" | "comments";
   section?: string;
 }
 
 const { title = `Admin | ${SITE.title}`, activeNav = "posts", section } = Astro.props;
 
-const sectionLabel = section || (activeNav === "tags" ? "Tags" : "Posts");
+const sectionLabel = section || (
+  activeNav === "tags" ? "Tags" : activeNav === "comments" ? "Comments" : "Posts"
+);
 ---
 
 <!doctype html>
@@ -36,6 +38,7 @@ const sectionLabel = section || (activeNav === "tags" ? "Tags" : "Posts");
       <nav class="admin-nav">
         <a href="/admin" class:list={[activeNav === "posts" && "active"]}>Posts</a>
         <a href="/admin/tags" class:list={[activeNav === "tags" && "active"]}>Tags</a>
+        <a href="/admin/comments" class:list={[activeNav === "comments" && "active"]}>Comments</a>
         <div class="admin-nav-right">
           <a href="/">View Site &rarr;</a>
         </div>
