@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useCreatePost, useUpdatePost, useTags, type Post, type CreatePostInput, type UpdatePostInput } from "./hooks";
+import { slugifyStr } from "@/utils/slugify";
+import { useCreatePost, useUpdatePost, type Post, type CreatePostInput, type UpdatePostInput } from "./hooks";
 import { vars, input, label, card, btnPrimary, btnSecondary } from "./styles";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
@@ -20,6 +21,8 @@ function PostEditorInner({ post }: { post?: Post }) {
   const updatePost = useUpdatePost();
 
   const [title, setTitle] = useState(post?.title || "");
+  const [slug, setSlug] = useState(post?.slug || "");
+  const [slugEdited, setSlugEdited] = useState(isEdit);
   const [description, setDescription] = useState(post?.description || "");
   const [author, setAuthor] = useState(post?.author || "");
   const [coverImage, setCoverImage] = useState(post?.coverImage || "");
@@ -33,6 +36,11 @@ function PostEditorInner({ post }: { post?: Post }) {
 
   const handleSave = useCallback(async () => {
     if (!title.trim()) return;
+    if (isEdit && !slug.trim()) {
+      setError("Post URL is required.");
+      return;
+    }
+
     setSaving(true);
     setSaved(false);
     setError("");
@@ -55,9 +63,22 @@ function PostEditorInner({ post }: { post?: Post }) {
 
     try {
       if (isEdit && post) {
-        await updatePost.mutateAsync({ slug: post.slug, ...base } as UpdatePostInput);
+        const result = await updatePost.mutateAsync({
+          currentSlug: post.slug,
+          slug: slug.trim(),
+          ...base,
+        } as UpdatePostInput);
+        if (result.post.slug !== post.slug) {
+          window.location.href = `/admin/posts/edit/${encodeURIComponent(result.post.slug)}`;
+          return;
+        }
       } else {
-        await createPost.mutateAsync(base as CreatePostInput);
+        const result = await createPost.mutateAsync({
+          slug: slug.trim() || undefined,
+          ...base,
+        } as CreatePostInput);
+        window.location.href = `/admin/posts/edit/${encodeURIComponent(result.post.slug)}`;
+        return;
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -66,9 +87,9 @@ function PostEditorInner({ post }: { post?: Post }) {
     } finally {
       setSaving(false);
     }
-  }, [title, description, body, tagInput, author, coverImage, draft, featured, post, isEdit, createPost, updatePost]);
+  }, [title, slug, description, body, tagInput, author, coverImage, draft, featured, post, isEdit, createPost, updatePost]);
 
-  const canSave = title.trim().length > 0;
+  const canSave = title.trim().length > 0 && (!isEdit || slug.trim().length > 0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -78,7 +99,11 @@ function PostEditorInner({ post }: { post?: Post }) {
       <div style={card}>
         <input
           value={title}
-          onChange={e => setTitle(e.target.value)}
+          onChange={e => {
+            const nextTitle = e.target.value;
+            setTitle(nextTitle);
+            if (!slugEdited) setSlug(slugifyStr(nextTitle));
+          }}
           placeholder="Post title..."
           className="pe-title"
           style={{
@@ -109,6 +134,49 @@ function PostEditorInner({ post }: { post?: Post }) {
           <div>
             <label style={label}>Author</label>
             <input style={input} value={author} onChange={e => setAuthor(e.target.value)} placeholder="Author name" />
+          </div>
+          <div>
+            <label style={label}>Post URL</label>
+            <div style={{ display: "flex", alignItems: "stretch" }}>
+              <span style={{
+                ...input,
+                borderTopRightRadius: 0,
+                borderBottomRightRadius: 0,
+                borderRight: "none",
+                width: "auto",
+                color: "var(--muted-foreground)",
+                whiteSpace: "nowrap",
+              }}>
+                /posts/
+              </span>
+              <input
+                style={{ ...input, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+                value={slug}
+                onChange={e => {
+                  setSlug(slugifyStr(e.target.value));
+                  setSlugEdited(true);
+                }}
+                placeholder="post-url"
+                required={isEdit}
+              />
+            </div>
+            {slug && (
+              <a
+                href={`/posts/${slug}/`}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "inline-block",
+                  marginTop: "0.375rem",
+                  color: "var(--muted-foreground)",
+                  fontFamily: vars.font,
+                  fontSize: "0.75rem",
+                  textDecoration: "none",
+                }}
+              >
+                View public URL
+              </a>
+            )}
           </div>
           <div>
             <label style={label}>Tags</label>

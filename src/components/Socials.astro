@@ -1,17 +1,49 @@
 ---
-import { SOCIALS } from "@/constants";
 import LinkButton from "./LinkButton.astro";
+import IconMail from "@/assets/icons/IconMail.svg";
+import IconGitHub from "@/assets/icons/IconGitHub.svg";
+import IconBrandX from "@/assets/icons/IconBrandX.svg";
+import IconLinkedin from "@/assets/icons/IconLinkedin.svg";
+import { getRuntimeSiteSettings } from "@/utils/siteSettings";
 
 export interface Props {
   centered?: boolean;
 }
 
 const { centered = false } = Astro.props;
+const siteSettings = await getRuntimeSiteSettings(Astro.locals);
+const emailHref = siteSettings.email
+  ? siteSettings.email.startsWith("mailto:")
+    ? siteSettings.email
+    : `mailto:${siteSettings.email}`
+  : "";
+const socials = [
+  {
+    href: siteSettings.githubUrl,
+    linkTitle: `${siteSettings.title} on GitHub`,
+    icon: IconGitHub,
+  },
+  {
+    href: siteSettings.twitterUrl,
+    linkTitle: `${siteSettings.title} on X`,
+    icon: IconBrandX,
+  },
+  {
+    href: siteSettings.linkedinUrl,
+    linkTitle: `${siteSettings.title} on LinkedIn`,
+    icon: IconLinkedin,
+  },
+  {
+    href: emailHref,
+    linkTitle: `Send an email to ${siteSettings.title}`,
+    icon: IconMail,
+  },
+].filter(social => social.href);
 ---
 
 <div class:list={["flex flex-wrap gap-4", { "justify-center": centered }]}>
   {
-    SOCIALS.map(social => (
+    socials.map(social => (
       <LinkButton
         href={social.href}
         class="p-2 sm:p-1"

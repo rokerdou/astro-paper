@@ -1,6 +1,6 @@
 ---
 import Socials from "./Socials.astro";
-import { SITE } from "@/config";
+import { getRuntimeSiteSettings } from "@/utils/siteSettings";
 
 const currentYear = new Date().getFullYear();
 
@@ -9,6 +9,7 @@ export interface Props {
 }
 
 const { noMarginTop = false } = Astro.props;
+const siteSettings = await getRuntimeSiteSettings(Astro.locals);
 ---
 
 <footer class:list={["w-full bg-white dark:bg-[#1a1a1a] border-t border-border", { "mt-auto": !noMarginTop }]}>
@@ -16,11 +17,13 @@ const { noMarginTop = false } = Astro.props;
     <div class="flex flex-col md:flex-row justify-between items-center gap-6">
       <div class="text-center md:text-left">
         <p class="text-sm text-muted-foreground">
-          &copy; {currentYear} {SITE.author}. All rights reserved.
+          &copy; {currentYear} {siteSettings.author}. {siteSettings.copyright}
         </p>
-        <p class="text-xs text-muted-foreground/80 mt-2">
-          Powered by Astro Paper & Gemini.
-        </p>
+        {siteSettings.footerText && (
+          <p class="text-xs text-muted-foreground/80 mt-2">
+            {siteSettings.footerText}
+          </p>
+        )}
       </div>
       <div class="flex items-center gap-4 text-muted-foreground">
         <Socials centered />

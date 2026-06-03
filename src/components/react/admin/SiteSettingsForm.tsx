@@ -11,6 +11,12 @@ interface SiteSettings {
   lang: string;
   dir: "ltr" | "rtl" | "auto";
   themeColor: string;
+  copyright: string;
+  footerText: string;
+  githubUrl: string;
+  twitterUrl: string;
+  linkedinUrl: string;
+  email: string;
 }
 
 const emptySettings: SiteSettings = {
@@ -23,6 +29,12 @@ const emptySettings: SiteSettings = {
   lang: "en",
   dir: "ltr",
   themeColor: "",
+  copyright: "",
+  footerText: "",
+  githubUrl: "",
+  twitterUrl: "",
+  linkedinUrl: "",
+  email: "",
 };
 
 function Loading() {
@@ -165,6 +177,53 @@ export default function SiteSettingsForm() {
           required
         />
       </label>
+
+      <div>
+        <h2 style={{
+          margin: "0.5rem 0 0",
+          color: "var(--foreground)",
+          fontFamily: vars.font,
+          fontSize: "0.9375rem",
+          fontWeight: 600,
+        }}>
+          Footer
+        </h2>
+        <p style={{
+          margin: "0.375rem 0 0",
+          color: "var(--muted-foreground)",
+          fontFamily: vars.font,
+          fontSize: "0.8125rem",
+        }}>
+          These links are rendered on the server, so they do not add client-side work to public pages.
+        </p>
+      </div>
+
+      <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(16rem, 1fr))" }}>
+        <label>
+          <span style={label}>Copyright Text</span>
+          <input style={input} value={settings.copyright} onChange={event => update("copyright", event.target.value)} />
+        </label>
+        <label>
+          <span style={label}>Footer Text</span>
+          <input style={input} value={settings.footerText} onChange={event => update("footerText", event.target.value)} />
+        </label>
+        <label>
+          <span style={label}>GitHub URL</span>
+          <input style={input} value={settings.githubUrl} onChange={event => update("githubUrl", event.target.value)} />
+        </label>
+        <label>
+          <span style={label}>X / Twitter URL</span>
+          <input style={input} value={settings.twitterUrl} onChange={event => update("twitterUrl", event.target.value)} />
+        </label>
+        <label>
+          <span style={label}>LinkedIn URL</span>
+          <input style={input} value={settings.linkedinUrl} onChange={event => update("linkedinUrl", event.target.value)} />
+        </label>
+        <label>
+          <span style={label}>Email</span>
+          <input style={input} value={settings.email} onChange={event => update("email", event.target.value)} />
+        </label>
+      </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
         <button type="submit" style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }} disabled={saving}>

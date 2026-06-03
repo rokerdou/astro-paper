@@ -35,6 +35,18 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
+  const nextSlug = body.slug !== undefined ? slugifyStr(body.slug) : slug;
+  if (!nextSlug) {
+    return Response.json({ error: "Post URL slug is required" }, { status: 400 });
+  }
+
+  if (nextSlug !== slug) {
+    const slugOwner = await getPostBySlug(db, nextSlug);
+    if (slugOwner) {
+      return Response.json({ error: "Post URL already exists" }, { status: 409 });
+    }
+  }
+
   const rendered = body.body !== undefined
     ? await import("@/utils/renderPostContent").then(({ renderPostContent }) =>
         renderPostContent(body.body)
@@ -44,6 +56,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   const modDatetime = body.modDatetime ?? existing.mod_datetime;
 
   await updatePostBySlug(db, slug, {
+    ...(nextSlug !== slug && { slug: nextSlug }),
     ...(body.title !== undefined && { title: body.title }),
     ...(body.description !== undefined && { description: body.description }),
     ...(body.body !== undefined && { body: body.body }),
@@ -73,10 +86,11 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       ? await replacePostTags(db, existing.id, body.tags, slugifyStr)
       : [];
 
-  const updated = await getPostWithTags(db, slug);
+  const updated = await getPostWithTags(db, nextSlug);
   await refreshTagPostCounts(db);
   await purgePublicCache(request, [
     `/posts/${slug}/`,
+    `/posts/${nextSlug}/`,
     ...oldTags.map(tag => `/tags/${tag.slug}/`),
     ...newTags.map(tag => `/tags/${tag.slug}/`),
   ]);

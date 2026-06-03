@@ -79,28 +79,38 @@ export function useCreatePost() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(post),
       });
-      return res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to create post");
+      return data as { post: Post };
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["posts"] }),
   });
 }
 
-export type UpdatePostInput = Omit<Partial<Post>, "tags"> & { slug: string; tags?: string[] };
+export type UpdatePostInput = Omit<Partial<Post>, "tags"> & {
+  currentSlug: string;
+  tags?: string[];
+};
 
 export function useUpdatePost() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ slug, ...post }: UpdatePostInput) => {
-      const res = await fetch(`${BASE}/api/posts/${slug}`, {
+    mutationFn: async ({ currentSlug, ...post }: UpdatePostInput) => {
+      const res = await fetch(`${BASE}/api/posts/${currentSlug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(post),
       });
-      return res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to update post");
+      return data as { post: Post };
     },
-    onSuccess: (_, vars) => {
+    onSuccess: (data, vars) => {
       qc.invalidateQueries({ queryKey: ["posts"] });
-      qc.invalidateQueries({ queryKey: ["post", vars.slug] });
+      qc.invalidateQueries({ queryKey: ["post", vars.currentSlug] });
+      if (data.post.slug !== vars.currentSlug) {
+        qc.invalidateQueries({ queryKey: ["post", data.post.slug] });
+      }
     },
   });
 }

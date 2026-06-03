@@ -1,180 +1,228 @@
-# AstroPaper 📄
+# AstroPaper Cloudflare SSR
 
-![AstroPaper](public/astropaper-og.jpg)
-[![Figma](https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/community/file/1356898632249991861)
-![Typescript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![GitHub](https://img.shields.io/github/license/satnaing/astro-paper?color=%232F3741&style=for-the-badge)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white&style=for-the-badge)](https://conventionalcommits.org)
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg?style=for-the-badge)](http://commitizen.github.io/cz-cli/)
+AstroPaper Cloudflare SSR is a blog system built on Astro, React, TanStack Query,
+Cloudflare Pages Workers, D1, KV, and Pagefind. It keeps Astro's server-rendered
+HTML and SEO strengths while adding a database-backed admin console for posts,
+site settings, comments, and tags.
 
-AstroPaper is a minimal, responsive, accessible and SEO-friendly Astro blog theme. This theme is designed and crafted based on [my personal blog](https://satnaing.dev/blog).
+## Architecture
 
-Read [the blog posts](https://astro-paper.pages.dev/posts/) or check [the README Documentation Section](#-documentation) for more info.
+- Public pages are rendered by Astro SSR on Cloudflare Pages Workers.
+- Blog data is stored in Cloudflare D1.
+- Markdown is rendered before it is saved, then stored as `body_html`,
+  `headings`, and `search_text` so public requests do not render markdown on the
+  hot path.
+- Pagefind is generated at build time from the rendered site output.
+- Admin pages use React and TanStack Query. Public article pages do not hydrate
+  the admin editor code.
+- Sessions use the `SESSION` KV namespace.
+- Public cache is purged after post, comment, tag, or site setting changes.
 
-## 🔥 Features
+## Requirements
 
-- [x] type-safe markdown
-- [x] super fast performance
-- [x] accessible (Keyboard/VoiceOver)
-- [x] responsive (mobile ~ desktops)
-- [x] SEO-friendly
-- [x] light & dark mode
-- [x] fuzzy search
-- [x] draft posts & pagination
-- [x] sitemap & rss feed
-- [x] followed best practices
-- [x] highly customizable
-- [x] dynamic OG image generation for blog posts [#15](https://github.com/satnaing/astro-paper/pull/15) ([Blog Post](https://astro-paper.pages.dev/posts/dynamic-og-image-generation-in-astropaper-blog-posts/))
+- Node.js 20+
+- npm
+- Wrangler 4+
+- A Cloudflare account with Pages, D1, and KV enabled
 
-_Note: I've tested screen-reader accessibility of AstroPaper using **VoiceOver** on Mac and **TalkBack** on Android. I couldn't test all other screen-readers out there. However, accessibility enhancements in AstroPaper should be working fine on others as well._
-
-## ✅ Lighthouse Score
-
-<p align="center">
-  <a href="https://pagespeed.web.dev/report?url=https%3A%2F%2Fastro-paper.pages.dev%2F&form_factor=desktop">
-    <img width="710" alt="AstroPaper Lighthouse Score" src="AstroPaper-lighthouse-score.svg">
-  <a>
-</p>
-
-## 🚀 Project Structure
-
-Inside of AstroPaper, you'll see the following folders and files:
+Install dependencies:
 
 ```bash
-/
-├── public/
-│   ├── assets/
-|   ├── pagefind/ # auto-generated when build
-│   └── favicon.svg
-│   └── astropaper-og.jpg
-│   └── favicon.svg
-│   └── toggle-theme.js
-├── src/
-│   ├── assets/
-│   │   └── icons/
-│   │   └── images/
-│   ├── components/
-│   ├── data/
-│   │   └── blog/
-│   │       └── some-blog-posts.md
-│   ├── layouts/
-│   └── pages/
-│   └── styles/
-│   └── utils/
-│   └── config.ts
-│   └── constants.ts
-│   └── content.config.ts
-└── astro.config.ts
+npm install
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-All blog posts are stored in `src/data/blog` directory.
-
-## 📖 Documentation
-
-Documentation can be read in two formats\_ _markdown_ & _blog post_.
-
-- Configuration - [markdown](src/data/blog/how-to-configure-astropaper-theme.md) | [blog post](https://astro-paper.pages.dev/posts/how-to-configure-astropaper-theme/)
-- Add Posts - [markdown](src/data/blog/adding-new-post.md) | [blog post](https://astro-paper.pages.dev/posts/adding-new-posts-in-astropaper-theme/)
-- Customize Color Schemes - [markdown](src/data/blog/customizing-astropaper-theme-color-schemes.md) | [blog post](https://astro-paper.pages.dev/posts/customizing-astropaper-theme-color-schemes/)
-- Predefined Color Schemes - [markdown](src/data/blog/predefined-color-schemes.md) | [blog post](https://astro-paper.pages.dev/posts/predefined-color-schemes/)
-
-## 💻 Tech Stack
-
-**Main Framework** - [Astro](https://astro.build/)  
-**Type Checking** - [TypeScript](https://www.typescriptlang.org/)  
-**Styling** - [TailwindCSS](https://tailwindcss.com/)  
-**UI/UX** - [Figma Design File](https://www.figma.com/community/file/1356898632249991861)  
-**Static Search** - [FuseJS](https://pagefind.app/)  
-**Icons** - [Tablers](https://tabler-icons.io/)  
-**Code Formatting** - [Prettier](https://prettier.io/)  
-**Deployment** - [Cloudflare Pages](https://pages.cloudflare.com/)  
-**Illustration in About Page** - [https://freesvgillustration.com](https://freesvgillustration.com/)  
-**Linting** - [ESLint](https://eslint.org)
-
-## 👨🏻‍💻 Running Locally
-
-You can start using this project locally by running the following command in your desired directory:
+Check Wrangler authentication:
 
 ```bash
-# pnpm
-pnpm create astro@latest --template satnaing/astro-paper
-
-# npm
-npm create astro@latest -- --template satnaing/astro-paper
-
-# yarn
-yarn create astro --template satnaing/astro-paper
-
-# bun
-bun create astro@latest -- --template satnaing/astro-paper
+npx wrangler whoami
 ```
 
-Then start the project by running the following commands:
+## Cloudflare Resources
+
+Create a D1 database:
 
 ```bash
-# install dependencies if you haven't done so in the previous step.
-pnpm install
-
-# start running the project
-pnpm run dev
+npx wrangler d1 create astro-paper
 ```
 
-As an alternative approach, if you have Docker installed, you can use Docker to run this project locally. Here's how:
+Create a KV namespace for admin sessions:
 
 ```bash
-# Build the Docker image
-docker build -t astropaper .
-
-# Run the Docker container
-docker run -p 4321:80 astropaper
+npx wrangler kv namespace create SESSION
 ```
 
-## Google Site Verification (optional)
+Copy the generated ids into `wrangler.jsonc`:
 
-You can easily add your [Google Site Verification HTML tag](https://support.google.com/webmasters/answer/9008080#meta_tag_verification&zippy=%2Chtml-tag) in AstroPaper using an environment variable. This step is optional. If you don't add the following environment variable, the google-site-verification tag won't appear in the HTML `<head>` section.
+```jsonc
+{
+  "pages_build_output_dir": "./dist",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "astro-paper",
+      "database_id": "your-d1-database-id",
+      "migrations_dir": "./src/db/migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "your-kv-namespace-id"
+    }
+  ]
+}
+```
+
+## Environment Variables
+
+Configure these as Cloudflare Pages secrets for both Preview and Production:
 
 ```bash
-# in your environment variable file (.env)
-PUBLIC_GOOGLE_SITE_VERIFICATION=your-google-site-verification-value
+npx wrangler pages secret put ADMIN_USERNAME --project-name astro-paper
+npx wrangler pages secret put ADMIN_PASSWORD --project-name astro-paper
+npx wrangler pages secret put COMMENT_HASH_SECRET --project-name astro-paper
 ```
 
-> See [this discussion](https://github.com/satnaing/astro-paper/discussions/334#discussioncomment-10139247) for adding AstroPaper to the Google Search Console.
+For local development, put equivalent values in `.dev.vars`:
 
-## 🧞 Commands
+```dotenv
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin
+COMMENT_HASH_SECRET=replace-with-a-long-random-secret
+```
 
-All commands are run from the root of the project, from a terminal:
+`admin/admin` is acceptable only for local testing. Change it before exposing the
+admin console publicly.
 
-> **_Note!_** For `Docker` commands we must have it [installed](https://docs.docker.com/engine/install/) in your machine.
+## Database Setup
 
-| Command                              | Action                                                                                                                           |
-| :----------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm install`                       | Installs dependencies                                                                                                            |
-| `pnpm run dev`                       | Starts local dev server at `localhost:4321`                                                                                      |
-| `pnpm run build`                     | Build your production site to `./dist/`                                                                                          |
-| `pnpm run preview`                   | Preview your build locally, before deploying                                                                                     |
-| `pnpm run format:check`              | Check code format with Prettier                                                                                                  |
-| `pnpm run format`                    | Format codes with Prettier                                                                                                       |
-| `pnpm run sync`                      | Generates TypeScript types for all Astro modules. [Learn more](https://docs.astro.build/en/reference/cli-reference/#astro-sync). |
-| `pnpm run lint`                      | Lint with ESLint                                                                                                                 |
-| `docker compose up -d`               | Run AstroPaper on docker, You can access with the same hostname and port informed on `dev` command.                              |
-| `docker compose run app npm install` | You can run any command above into the docker container.                                                                         |
-| `docker build -t astropaper .`       | Build Docker image for AstroPaper.                                                                                               |
-| `docker run -p 4321:80 astropaper`   | Run AstroPaper on Docker. The website will be accessible at `http://localhost:4321`.                                             |
+Apply all D1 migrations locally:
 
-> **_Warning!_** Windows PowerShell users may need to install the [concurrently package](https://www.npmjs.com/package/concurrently) if they want to [run diagnostics](https://docs.astro.build/en/reference/cli-reference/#astro-check) during development (`astro check --watch & astro dev`). For more info, see [this issue](https://github.com/satnaing/astro-paper/issues/113).
+```bash
+npx wrangler d1 migrations apply astro-paper --local
+```
 
-## ✨ Feedback & Suggestions
+Apply all D1 migrations remotely:
 
-If you have any suggestions/feedback, you can contact me via [my email](mailto:contact@satnaing.dev). Alternatively, feel free to open an issue if you find bugs or want to request new features.
+```bash
+npx wrangler d1 migrations apply astro-paper --remote
+```
 
-## 📜 License
+If you already have markdown content or imported rows that do not include
+rendered HTML, backfill the derived fields:
 
-Licensed under the MIT License, Copyright © 2025
+```bash
+npm run backfill:rendered
+```
 
----
+The important D1 tables are:
 
-Made with 🤍 by [Sat Naing](https://satnaing.dev) 👨🏻‍💻 and [contributors](https://github.com/satnaing/astro-paper/graphs/contributors).
+- `posts`: canonical article records and pre-rendered article HTML.
+- `tags`: tag names and slugs.
+- `posts_tags`: many-to-many post/tag relation.
+- `tag_post_counts`: materialized tag counts for cheaper tag navigation.
+- `comments`: article comments and moderation status.
+- `site_settings`: runtime site title, SEO metadata, footer links, and copyright.
+
+## Local Development
+
+Start Astro locally:
+
+```bash
+npm run dev
+```
+
+Build the full site:
+
+```bash
+npm run build
+```
+
+The build runs `astro check`, `astro build`, generates the Pagefind index from
+`dist`, and copies the index to `public/pagefind`.
+
+## Deploy To Cloudflare Pages
+
+Build first:
+
+```bash
+npm run build
+```
+
+Deploy the `dist` output:
+
+```bash
+npx wrangler pages deploy dist --project-name astro-paper
+```
+
+After deployment, verify:
+
+- Public home page: `/`
+- Posts list: `/posts/`
+- One article page: `/posts/{slug}/`
+- Admin console: `/admin`
+- Site settings: `/admin/settings`
+- Comments moderation: `/admin/comments`
+- RSS: `/rss.xml`
+- Sitemap: `/sitemap-index.xml`
+
+## Admin Workflow
+
+The admin console is available at `/admin`.
+
+Posts:
+
+- Create posts from `/admin/posts/new`.
+- Edit posts from `/admin/posts/edit/{slug}`.
+- The `Post URL` field controls `posts.slug` and therefore the public URL:
+  `/posts/{slug}/`.
+- New posts can leave the URL empty; it is generated from the title.
+- Editing a post URL updates the existing row and purges both the old and new
+  article URLs from the public cache.
+
+Site settings:
+
+- Edit site title, website URL, meta description, author, language, direction,
+  OG image, theme color, footer text, copyright, GitHub, X/Twitter, LinkedIn,
+  and email from `/admin/settings`.
+- These values are server-rendered into public pages and RSS.
+- Empty footer social links are hidden.
+
+Comments:
+
+- Public comment submission is stored as `pending`.
+- Approve, reject, or delete comments from `/admin/comments`.
+
+## SEO And Performance Notes
+
+- Public pages return complete HTML from Astro SSR, including title, meta
+  description, canonical URL, Open Graph tags, Twitter tags, JSON-LD, RSS links,
+  and article content.
+- Markdown rendering is not performed on normal public page requests. The
+  rendered HTML is saved with the post.
+- Admin React bundles are only loaded on admin routes.
+- Comment JavaScript is isolated to article pages that render comments.
+- Site settings are read server-side. They do not add a public client-side fetch.
+- D1 queries use slug, publication status, pagination, and tag count structures
+  designed to keep page load cost bounded.
+- Pagefind remains build-time search. Rebuild and redeploy after large content
+  changes when the static search index needs to include the latest content.
+
+## Useful Commands
+
+```bash
+npm run build
+npm run lint
+npm run format:check
+npx wrangler d1 migrations apply astro-paper --remote
+npx wrangler pages deploy dist --project-name astro-paper
+```
+
+## Production Checklist
+
+- Replace default admin credentials.
+- Set a long random `COMMENT_HASH_SECRET`.
+- Apply D1 migrations remotely.
+- Confirm `wrangler.jsonc` points to the correct D1 and KV ids.
+- Configure the canonical `website` value in `/admin/settings`.
+- Verify RSS, sitemap, article pages, and Pagefind after deployment.

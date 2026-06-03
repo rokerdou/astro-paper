@@ -606,6 +606,7 @@ export async function updatePostBySlug(
   if (updates.bodyHtml !== undefined) add("body_html", updates.bodyHtml);
   if (updates.headings !== undefined) add("headings", updates.headings);
   if (updates.searchText !== undefined) add("search_text", updates.searchText);
+  if (updates.slug !== undefined) add("slug", updates.slug);
   if (updates.author !== undefined) add("author", updates.author);
   if (updates.pubDatetime !== undefined) add("pub_datetime", updates.pubDatetime);
   if (updates.modDatetime !== undefined) add("mod_datetime", updates.modDatetime);

@@ -12,6 +12,12 @@ export const SITE_SETTING_KEYS = [
   "lang",
   "dir",
   "themeColor",
+  "copyright",
+  "footerText",
+  "githubUrl",
+  "twitterUrl",
+  "linkedinUrl",
+  "email",
 ] as const;
 
 export type SiteSettingKey = (typeof SITE_SETTING_KEYS)[number];
@@ -26,6 +32,12 @@ export interface RuntimeSiteSettings {
   lang: string;
   dir: "ltr" | "rtl" | "auto";
   themeColor: string;
+  copyright: string;
+  footerText: string;
+  githubUrl: string;
+  twitterUrl: string;
+  linkedinUrl: string;
+  email: string;
 }
 
 type SiteSettingsLocals = App.Locals & {
@@ -42,6 +54,12 @@ export const DEFAULT_SITE_SETTINGS: RuntimeSiteSettings = {
   lang: SITE.lang || "en",
   dir: SITE.dir,
   themeColor: "",
+  copyright: "All rights reserved.",
+  footerText: "Powered by Astro Paper & Gemini.",
+  githubUrl: "https://github.com/satnaing/astro-paper",
+  twitterUrl: "https://x.com/username",
+  linkedinUrl: "https://www.linkedin.com/in/username/",
+  email: "yourmail@gmail.com",
 };
 
 function normalizeDir(value: string): RuntimeSiteSettings["dir"] {
@@ -49,16 +67,31 @@ function normalizeDir(value: string): RuntimeSiteSettings["dir"] {
 }
 
 function normalizeSettings(values: Record<string, string>) {
+  const valueOrDefault = (
+    key: SiteSettingKey,
+    fallback: string,
+    allowEmpty = false
+  ) => {
+    if (!(key in values)) return fallback;
+    return allowEmpty ? values[key] : values[key] || fallback;
+  };
+
   return {
-    website: values.website || DEFAULT_SITE_SETTINGS.website,
-    title: values.title || DEFAULT_SITE_SETTINGS.title,
-    description: values.description || DEFAULT_SITE_SETTINGS.description,
-    author: values.author || DEFAULT_SITE_SETTINGS.author,
-    profile: values.profile || DEFAULT_SITE_SETTINGS.profile,
-    ogImage: values.ogImage || DEFAULT_SITE_SETTINGS.ogImage,
-    lang: values.lang || DEFAULT_SITE_SETTINGS.lang,
-    dir: normalizeDir(values.dir || DEFAULT_SITE_SETTINGS.dir),
-    themeColor: values.themeColor || DEFAULT_SITE_SETTINGS.themeColor,
+    website: valueOrDefault("website", DEFAULT_SITE_SETTINGS.website),
+    title: valueOrDefault("title", DEFAULT_SITE_SETTINGS.title),
+    description: valueOrDefault("description", DEFAULT_SITE_SETTINGS.description),
+    author: valueOrDefault("author", DEFAULT_SITE_SETTINGS.author),
+    profile: valueOrDefault("profile", DEFAULT_SITE_SETTINGS.profile, true),
+    ogImage: valueOrDefault("ogImage", DEFAULT_SITE_SETTINGS.ogImage, true),
+    lang: valueOrDefault("lang", DEFAULT_SITE_SETTINGS.lang),
+    dir: normalizeDir(valueOrDefault("dir", DEFAULT_SITE_SETTINGS.dir)),
+    themeColor: valueOrDefault("themeColor", DEFAULT_SITE_SETTINGS.themeColor, true),
+    copyright: valueOrDefault("copyright", DEFAULT_SITE_SETTINGS.copyright, true),
+    footerText: valueOrDefault("footerText", DEFAULT_SITE_SETTINGS.footerText, true),
+    githubUrl: valueOrDefault("githubUrl", DEFAULT_SITE_SETTINGS.githubUrl, true),
+    twitterUrl: valueOrDefault("twitterUrl", DEFAULT_SITE_SETTINGS.twitterUrl, true),
+    linkedinUrl: valueOrDefault("linkedinUrl", DEFAULT_SITE_SETTINGS.linkedinUrl, true),
+    email: valueOrDefault("email", DEFAULT_SITE_SETTINGS.email, true),
   };
 }
 

@@ -70,6 +70,12 @@ export const comments = sqliteTable("comments", {
   index("idx_comments_moderation").on(table.status, table.createdAt, table.id),
 ]);
 
+export const siteSettings = sqliteTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull().default(""),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 export const postsRelations = relations(posts, ({ many }) => ({
   postsTags: many(postsTags),
   comments: many(comments),

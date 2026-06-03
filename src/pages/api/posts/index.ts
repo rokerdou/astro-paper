@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import {
   createPost,
+  getPostBySlug,
   getPostStats,
   listPostSummaries,
   listTagNamesForPostIds,
@@ -64,7 +65,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const db = getD1(locals);
   const body = await request.json();
 
-  const slug = body.slug || slugifyStr(body.title);
+  if (!body.title || typeof body.title !== "string") {
+    return Response.json({ error: "Title is required" }, { status: 400 });
+  }
+
+  const slug = slugifyStr(body.slug || body.title);
+  if (!slug) {
+    return Response.json({ error: "Post URL slug is required" }, { status: 400 });
+  }
+
+  const existing = await getPostBySlug(db, slug);
+  if (existing) {
+    return Response.json({ error: "Post URL already exists" }, { status: 409 });
+  }
+
   const now = new Date().toISOString();
   const sourceBody = body.body || "";
   const { renderPostContent } = await import("@/utils/renderPostContent");
