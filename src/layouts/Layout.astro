@@ -2,6 +2,7 @@
 import { ClientRouter } from "astro:transitions";
 import { PUBLIC_GOOGLE_SITE_VERIFICATION } from "astro:env/client";
 import { SITE } from "@/config";
+import themeScript from "../../public/toggle-theme.js?raw";
 import "@/styles/global.css";
 
 export interface Props {
@@ -130,7 +131,7 @@ const structuredData = {
 
     <ClientRouter />
 
-    <script is:inline src="/toggle-theme.js"></script>
+    <script is:inline set:html={themeScript}></script>
   </head>
   <body>
     <slot />

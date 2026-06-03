@@ -1,5 +1,6 @@
 ---
 import { SITE } from "@/config";
+import themeScript from "../../public/toggle-theme.js?raw";
 import "@/styles/global.css";
 
 export interface Props {
@@ -20,7 +21,7 @@ const sectionLabel = section || (activeNav === "tags" ? "Tags" : "Posts");
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
-    <script is:inline src="/toggle-theme.js"></script>
+    <script is:inline set:html={themeScript}></script>
   </head>
   <body>
     <div class="admin-shell">
