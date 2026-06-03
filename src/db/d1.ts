@@ -60,6 +60,12 @@ export interface SearchPostRow {
   search_text: string;
 }
 
+export interface SiteSettingRow {
+  key: string;
+  value: string;
+  updated_at: string;
+}
+
 export type CommentStatus = "pending" | "approved" | "rejected";
 
 export interface CommentRow {
@@ -156,6 +162,35 @@ function rowToPostWithTags(post: PostRow, tags: TagRow[]): PostWithTags {
 export async function listPosts(db: D1Database) {
   const result = await db.prepare("SELECT * FROM posts").all<PostRow>();
   return result.results ?? [];
+}
+
+export async function listSiteSettings(db: D1Database) {
+  const result = await db
+    .prepare("SELECT key, value, updated_at FROM site_settings ORDER BY key ASC")
+    .all<SiteSettingRow>();
+  return result.results ?? [];
+}
+
+export async function replaceSiteSettings(
+  db: D1Database,
+  settings: Record<string, string>
+) {
+  const now = new Date().toISOString();
+  const statements = Object.entries(settings).map(([key, value]) =>
+    db
+      .prepare(
+        `INSERT INTO site_settings (key, value, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(key) DO UPDATE SET
+          value = excluded.value,
+          updated_at = excluded.updated_at`
+      )
+      .bind(key, value, now)
+  );
+
+  if (statements.length > 0) {
+    await db.batch(statements);
+  }
 }
 
 function nowWithScheduledMargin() {

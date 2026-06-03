@@ -1,19 +1,28 @@
 ---
 import { SITE } from "@/config";
+import { getRuntimeSiteSettings } from "@/utils/siteSettings";
 import themeScript from "../../public/toggle-theme.js?raw";
 import "@/styles/global.css";
 
 export interface Props {
   title?: string;
-  activeNav?: "posts" | "tags" | "comments";
+  activeNav?: "posts" | "tags" | "comments" | "settings";
   section?: string;
 }
 
 const { title = `Admin | ${SITE.title}`, activeNav = "posts", section } = Astro.props;
+const siteSettings = await getRuntimeSiteSettings(Astro.locals);
 
 const sectionLabel = section || (
-  activeNav === "tags" ? "Tags" : activeNav === "comments" ? "Comments" : "Posts"
+  activeNav === "tags"
+    ? "Tags"
+    : activeNav === "comments"
+      ? "Comments"
+      : activeNav === "settings"
+        ? "Settings"
+        : "Posts"
 );
+const pageTitle = title === `Admin | ${SITE.title}` ? `Admin | ${siteSettings.title}` : title;
 ---
 
 <!doctype html>
@@ -22,13 +31,13 @@ const sectionLabel = section || (
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>{title}</title>
+    <title>{pageTitle}</title>
     <script is:inline set:html={themeScript}></script>
   </head>
   <body>
     <div class="admin-shell">
       <div class="admin-header">
-        <a href="/" class="admin-brand">{SITE.title}</a>
+        <a href="/" class="admin-brand">{siteSettings.title}</a>
         <span class="admin-sep">/</span>
         <a href="/admin" class="admin-brand admin-brand--muted">Admin</a>
         <span class="admin-sep">/</span>
@@ -39,6 +48,7 @@ const sectionLabel = section || (
         <a href="/admin" class:list={[activeNav === "posts" && "active"]}>Posts</a>
         <a href="/admin/tags" class:list={[activeNav === "tags" && "active"]}>Tags</a>
         <a href="/admin/comments" class:list={[activeNav === "comments" && "active"]}>Comments</a>
+        <a href="/admin/settings" class:list={[activeNav === "settings" && "active"]}>Settings</a>
         <div class="admin-nav-right">
           <a href="/">View Site &rarr;</a>
         </div>

@@ -9,8 +9,10 @@ import LinkButton from "./LinkButton.astro";
 import { SITE } from "@/config";
 import { getRuntimeTopTags } from "@/utils/runtimePosts";
 import { getD1 } from "@/utils/cloudflare";
+import { getRuntimeSiteSettings } from "@/utils/siteSettings";
 
 const { pathname } = Astro.url;
+const siteSettings = await getRuntimeSiteSettings(Astro.locals);
 
 // Remove trailing slash from current pathname if exists
 const currentPath =
@@ -57,7 +59,7 @@ const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
             &lt;/&gt;
           </div>
           <span class="text-xl font-bold tracking-tight group-hover:text-accent transition-colors">
-            {SITE.title}
+            {siteSettings.title}
           </span>
         </a>
       </div>

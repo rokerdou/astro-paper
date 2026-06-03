@@ -1,7 +1,10 @@
 ---
 import { ClientRouter } from "astro:transitions";
 import { PUBLIC_GOOGLE_SITE_VERIFICATION } from "astro:env/client";
-import { SITE } from "@/config";
+import {
+  getRuntimeSiteSettings,
+  resolveSiteTitle,
+} from "@/utils/siteSettings";
 import themeScript from "../../public/toggle-theme.js?raw";
 import "@/styles/global.css";
 
@@ -17,26 +20,29 @@ export interface Props {
   scrollSmooth?: boolean;
 }
 
+const siteSettings = await getRuntimeSiteSettings(Astro.locals);
+
 const {
-  title = SITE.title,
-  author = SITE.author,
-  profile = SITE.profile,
-  description = SITE.desc,
-  ogImage = SITE.ogImage ? `/${SITE.ogImage}` : "/og.png",
+  title: inputTitle,
+  author = siteSettings.author,
+  profile = siteSettings.profile,
+  description = siteSettings.description,
+  ogImage = siteSettings.ogImage ? `/${siteSettings.ogImage}` : "/og.png",
   canonicalURL = new URL(Astro.url.pathname, Astro.url),
   pubDatetime,
   modDatetime,
   scrollSmooth = false,
 } = Astro.props;
 
+const title = resolveSiteTitle(inputTitle, siteSettings.title);
 const socialImageURL = new URL(ogImage, Astro.url);
 
 const structuredData = {
   "@context": "https://schema.org",
-  "@type": "BlogPosting",
+  "@type": pubDatetime ? "BlogPosting" : "WebPage",
   headline: `${title}`,
   image: `${socialImageURL}`,
-  datePublished: `${pubDatetime?.toISOString()}`,
+  ...(pubDatetime && { datePublished: pubDatetime.toISOString() }),
   ...(modDatetime && { dateModified: modDatetime.toISOString() }),
   author: [
     {
@@ -50,9 +56,9 @@ const structuredData = {
 
 <!doctype html>
 <html
-  dir={SITE.dir}
-  lang=`${SITE.lang ?? "en"}`
-  class={`${scrollSmooth && "scroll-smooth"}`}
+  dir={siteSettings.dir}
+  lang={siteSettings.lang || "en"}
+  class:list={[scrollSmooth && "scroll-smooth"]}
 >
   <head>
     <meta charset="UTF-8" />
@@ -111,11 +117,11 @@ const structuredData = {
     <link
       rel="alternate"
       type="application/rss+xml"
-      title={SITE.title}
-      href={new URL("rss.xml", Astro.site)}
+      title={siteSettings.title}
+      href={new URL("rss.xml", siteSettings.website || Astro.url.origin)}
     />
 
-    <meta name="theme-color" content="" />
+    <meta name="theme-color" content={siteSettings.themeColor} />
 
     {
       // If PUBLIC_GOOGLE_SITE_VERIFICATION is set in the environment variable,

@@ -7,6 +7,6 @@ export const prerender = false;
 const { slug } = Astro.params;
 ---
 
-<AdminLayout title="Edit Post | AstroPaper" activeNav="posts" section="Edit Post">
+<AdminLayout title="Edit Post | Admin" activeNav="posts" section="Edit Post">
   <EditPostWrapper client:load slug={slug!} />
 </AdminLayout>
