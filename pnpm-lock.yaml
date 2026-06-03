@@ -11,6 +11,9 @@ importers:
       '@astrojs/markdown-remark':
         specifier: ^6.3.3
         version: 6.3.3
+      '@astrojs/prism':
+        specifier: 3.3.0
+        version: 3.3.0
       '@astrojs/react':
         specifier: ^5.0.5
         version: 5.0.5(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(jiti@2.4.2)(lightningcss@1.30.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(tsx@4.22.3)(yaml@2.7.0)
@@ -47,9 +50,15 @@ importers:
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@cloudflare/workers-types@4.20260530.1)
+      github-slugger:
+        specifier: ^2.0.0
+        version: 2.0.0
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
+      hast-util-from-html:
+        specifier: ^2.0.3
+        version: 2.0.3
       lodash.kebabcase:
         specifier: ^4.1.1
         version: 4.1.1
@@ -59,18 +68,27 @@ importers:
       react-dom:
         specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
+      rehype-raw:
+        specifier: ^7.0.0
+        version: 7.0.0
       rehype-stringify:
         specifier: ^10.0.1
         version: 10.0.1
       remark-collapse:
         specifier: ^0.1.2
         version: 0.1.2
+      remark-gfm:
+        specifier: ^4.0.1
+        version: 4.0.1
       remark-parse:
         specifier: ^11.0.0
         version: 11.0.0
       remark-rehype:
         specifier: ^11.1.2
         version: 11.1.2
+      remark-smartypants:
+        specifier: ^3.0.2
+        version: 3.0.2
       remark-toc:
         specifier: ^9.0.0
         version: 9.0.0
