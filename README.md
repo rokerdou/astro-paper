@@ -1,68 +1,84 @@
-# AstroPaper Cloudflare SSR
+# AstroPaper Cloudflare SSR 博客系统
 
-AstroPaper Cloudflare SSR is a blog system built on Astro, React, TanStack Query,
-Cloudflare Pages Workers, D1, KV, R2, and Pagefind. It keeps Astro's server-rendered
-HTML and SEO strengths while adding a database-backed admin console for posts,
-site settings, comments, and tags.
+这是一个基于 AstroPaper 改造的 Cloudflare 版本博客系统。项目使用 Astro SSR
+保留服务端 HTML 与 SEO 优势，同时提供数据库驱动的后台管理能力。
 
-## Architecture
+## 技术架构
 
-- Public pages are rendered by Astro SSR on Cloudflare Pages Workers.
-- Blog data is stored in Cloudflare D1.
-- Markdown is rendered before it is saved, then stored as `body_html`,
-  `headings`, and `search_text` so public requests do not render markdown on the
-  hot path.
-- Pagefind is generated at build time from the rendered site output.
-- Admin pages use React and TanStack Query. Public article pages do not hydrate
-  the admin editor code.
-- Sessions use the `SESSION` KV namespace.
-- Uploaded article images and files are stored in R2 and served through the
-  same Pages Worker under `/uploads/...`.
-- Public cache is purged after post, comment, tag, or site setting changes.
+- Astro 5：负责页面 SSR、路由、SEO meta、RSS、sitemap。
+- Cloudflare Pages Worker：承载 Astro SSR 运行时。
+- Cloudflare D1：存储文章、标签、评论、站点设置。
+- Cloudflare KV：存储后台会话相关数据。
+- Cloudflare R2：存储后台上传的文章图片和文件。
+- React + TanStack Query：只用于后台管理界面和评论组件。
+- Pagefind：构建时生成静态搜索索引。
 
-## Requirements
+公开页面的核心设计目标是：**服务端直接输出完整 HTML，前台尽量少加载 JS**。
+
+## 核心功能
+
+- 后台文章新增、编辑、删除。
+- 文章 URL slug 可在后台编辑。
+- Markdown 内容在保存时预渲染为 HTML，公开文章页不在请求热路径上渲染 Markdown。
+- 后台支持拖拽或选择上传图片/文件到 R2，并自动插入 Markdown 图片或文件链接。
+- 评论提交、分页、审核、拒绝、删除。
+- 后台配置站点标题、SEO 描述、作者、OG 图、语言、footer 版权、GitHub、X/Twitter、LinkedIn、邮箱。
+- 首页、文章页、标签页、RSS、sitemap 由 Astro SSR 输出 SEO 友好内容。
+
+## 本地要求
 
 - Node.js 20+
 - npm
 - Wrangler 4+
-- A Cloudflare account with Pages, D1, and KV enabled
+- Cloudflare 账号，并启用 Pages、D1、KV、R2
 
-Install dependencies:
+安装依赖：
 
 ```bash
 npm install
 ```
 
-Check Wrangler authentication:
+确认 Wrangler 登录状态：
 
 ```bash
 npx wrangler whoami
 ```
 
-## Cloudflare Resources
+## Cloudflare 资源创建
 
-Create a D1 database:
+### 1. 创建 D1 数据库
 
 ```bash
 npx wrangler d1 create astro-paper
 ```
 
-Create a KV namespace for admin sessions:
+创建后把返回的 `database_id` 写入 `wrangler.jsonc`。
+
+### 2. 创建 KV 命名空间
 
 ```bash
 npx wrangler kv namespace create SESSION
 ```
 
-Create an R2 bucket for article assets:
+创建后把返回的 `id` 写入 `wrangler.jsonc`。
+
+### 3. 创建 R2 Bucket
 
 ```bash
 npx wrangler r2 bucket create astro-paper-assets
 ```
 
-Copy the generated ids into `wrangler.jsonc`:
+R2 bucket 用于存储文章编辑器上传的图片和文件。
+
+## Wrangler 配置
+
+`wrangler.jsonc` 需要包含 D1、KV、R2 绑定：
 
 ```jsonc
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "astro-paper",
+  "compatibility_date": "2026-05-31",
   "pages_build_output_dir": "./dist",
   "d1_databases": [
     {
@@ -87,9 +103,15 @@ Copy the generated ids into `wrangler.jsonc`:
 }
 ```
 
-## Environment Variables
+当前项目中的 binding 名称约定：
 
-Configure these as Cloudflare Pages secrets for both Preview and Production:
+- `DB`：D1 数据库。
+- `SESSION`：后台会话 KV。
+- `UPLOADS`：R2 上传文件 bucket。
+
+## Pages Secrets
+
+后台认证和评论安全需要配置 Cloudflare Pages secrets。
 
 ```bash
 npx wrangler pages secret put ADMIN_USERNAME --project-name astro-paper
@@ -97,7 +119,9 @@ npx wrangler pages secret put ADMIN_PASSWORD --project-name astro-paper
 npx wrangler pages secret put COMMENT_HASH_SECRET --project-name astro-paper
 ```
 
-For local development, put equivalent values in `.dev.vars`:
+建议同时在 Preview 和 Production 环境配置。`COMMENT_HASH_SECRET` 应使用足够长的随机字符串。
+
+本地开发可以创建 `.dev.vars`：
 
 ```dotenv
 ADMIN_USERNAME=admin
@@ -105,149 +129,200 @@ ADMIN_PASSWORD=admin
 COMMENT_HASH_SECRET=replace-with-a-long-random-secret
 ```
 
-`admin/admin` is acceptable only for local testing. Change it before exposing the
-admin console publicly.
+`admin/admin` 只建议用于本地或临时测试，线上必须替换。
 
-## Database Setup
+## 数据库迁移
 
-Apply all D1 migrations locally:
+本地执行 D1 migrations：
 
 ```bash
 npx wrangler d1 migrations apply astro-paper --local
 ```
 
-Apply all D1 migrations remotely:
+远端执行 D1 migrations：
 
 ```bash
 npx wrangler d1 migrations apply astro-paper --remote
 ```
 
-If you already have markdown content or imported rows that do not include
-rendered HTML, backfill the derived fields:
+如果你已有导入文章，但缺少 `body_html`、`headings`、`search_text` 等派生字段，需要回填：
 
 ```bash
 npm run backfill:rendered
 ```
 
-The important D1 tables are:
+主要数据表：
 
-- `posts`: canonical article records and pre-rendered article HTML.
-- `tags`: tag names and slugs.
-- `posts_tags`: many-to-many post/tag relation.
-- `tag_post_counts`: materialized tag counts for cheaper tag navigation.
-- `comments`: article comments and moderation status.
-- `site_settings`: runtime site title, SEO metadata, footer links, and copyright.
+- `posts`：文章主表，包含 slug、标题、Markdown 原文、预渲染 HTML、SEO 字段、发布状态。
+- `tags`：标签。
+- `posts_tags`：文章和标签的关联表。
+- `tag_post_counts`：标签文章数物化表，用于降低标签导航查询成本。
+- `comments`：评论和审核状态。
+- `site_settings`：站点标题、SEO、footer、社交链接等运行时配置。
 
-Uploaded files are stored in R2 using keys like
-`uploads/2026/06/{timestamp}-{id}-{filename}`. Public Markdown links point to
-`/uploads/...`, which keeps the bucket private while allowing public reads
-through the Worker.
+## 本地开发
 
-## Local Development
-
-Start Astro locally:
+启动开发服务器：
 
 ```bash
 npm run dev
 ```
 
-Build the full site:
+构建：
 
 ```bash
 npm run build
 ```
 
-The build runs `astro check`, `astro build`, generates the Pagefind index from
-`dist`, and copies the index to `public/pagefind`.
+`npm run build` 会依次执行：
 
-## Deploy To Cloudflare Pages
+1. `astro check`
+2. `astro build`
+3. `pagefind --site dist`
+4. 复制 Pagefind 索引到 `public/pagefind`
 
-Build first:
+## 部署到 Cloudflare Pages
+
+### 方式一：命令行部署
+
+先构建：
 
 ```bash
 npm run build
 ```
 
-Deploy the `dist` output:
+部署 `dist`：
 
 ```bash
 npx wrangler pages deploy dist --project-name astro-paper
 ```
 
-After deployment, verify:
+部署完成后 Wrangler 会输出两个地址：
 
-- Public home page: `/`
-- Posts list: `/posts/`
-- One article page: `/posts/{slug}/`
-- Admin console: `/admin`
-- Site settings: `/admin/settings`
-- Comments moderation: `/admin/comments`
-- RSS: `/rss.xml`
-- Sitemap: `/sitemap-index.xml`
+- preview 地址，例如 `https://xxxx.astro-paper-btv.pages.dev`
+- alias 地址，例如 `https://cloudflare.astro-paper-btv.pages.dev`
 
-## Admin Workflow
+### 方式二：Git 集成部署
 
-The admin console is available at `/admin`.
+也可以在 Cloudflare Pages 控制台连接 Git 仓库。
 
-Posts:
+推荐配置：
 
-- Create posts from `/admin/posts/new`.
-- Edit posts from `/admin/posts/edit/{slug}`.
-- The `Post URL` field controls `posts.slug` and therefore the public URL:
-  `/posts/{slug}/`.
-- New posts can leave the URL empty; it is generated from the title.
-- Editing a post URL updates the existing row and purges both the old and new
-  article URLs from the public cache.
-- Drag images or files onto the Markdown editor, or use the Upload button.
-  Uploaded images are inserted as Markdown images; other allowed files are
-  inserted as Markdown links.
+- Framework preset：Astro
+- Build command：`npm run build`
+- Build output directory：`dist`
+- Node.js version：20+
 
-Site settings:
+如果使用 Git 集成部署，也要确保 Pages 项目绑定了同样的 D1、KV、R2 和 secrets。
 
-- Edit site title, website URL, meta description, author, language, direction,
-  OG image, theme color, footer text, copyright, GitHub, X/Twitter, LinkedIn,
-  and email from `/admin/settings`.
-- These values are server-rendered into public pages and RSS.
-- Empty footer social links are hidden.
+## 部署后验证清单
 
-Comments:
+部署后建议逐项检查：
 
-- Public comment submission is stored as `pending`.
-- Approve, reject, or delete comments from `/admin/comments`.
+- `/` 首页是否正常。
+- `/posts/` 文章列表是否正常。
+- `/posts/{slug}/` 文章详情是否正常。
+- `/tags/` 标签页是否正常。
+- `/rss.xml` RSS 是否正常。
+- `/sitemap-index.xml` sitemap 是否正常。
+- `/admin` 后台是否需要认证。
+- `/admin/settings` 是否能编辑站点设置。
+- `/admin/posts/new` 是否能新增文章。
+- `/admin/posts/edit/{slug}` 是否能编辑文章 URL slug。
+- Markdown 编辑器拖拽上传图片或文件后，是否自动插入 Markdown 链接。
+- `/uploads/...` 上传后的公开文件链接是否能访问。
+- `/admin/comments` 评论审核是否正常。
 
-## SEO And Performance Notes
+## 后台使用说明
 
-- Public pages return complete HTML from Astro SSR, including title, meta
-  description, canonical URL, Open Graph tags, Twitter tags, JSON-LD, RSS links,
-  and article content.
-- Markdown rendering is not performed on normal public page requests. The
-  rendered HTML is saved with the post.
-- Admin React bundles are only loaded on admin routes.
-- Upload UI and R2 writes are admin-only. Public pages only render normal
-  Markdown image/file links.
-- Comment JavaScript is isolated to article pages that render comments.
-- Site settings are read server-side. They do not add a public client-side fetch.
-- D1 queries use slug, publication status, pagination, and tag count structures
-  designed to keep page load cost bounded.
-- Pagefind remains build-time search. Rebuild and redeploy after large content
-  changes when the static search index needs to include the latest content.
+后台入口：
 
-## Useful Commands
+```text
+/admin
+```
+
+文章管理：
+
+- 新增文章：`/admin/posts/new`
+- 编辑文章：`/admin/posts/edit/{slug}`
+- `Post URL` 字段控制文章公开 URL：`/posts/{slug}/`
+- 新文章 URL 可以留空，系统会根据标题自动生成。
+- 修改文章 URL 后，会清理旧 URL 和新 URL 的公开缓存。
+
+上传文件：
+
+- 在 Markdown 编辑器中点击 `Upload` 选择文件。
+- 或将图片/文件直接拖拽到 Markdown 文本框。
+- 图片会插入为：`![filename](/uploads/...)`
+- 文件会插入为：`[filename](/uploads/...)`
+- 文件存储在 R2，bucket 不需要公开。
+- 公开访问通过同源 Worker 路由 `/uploads/...` 代理读取。
+
+站点设置：
+
+- 入口：`/admin/settings`
+- 可配置站点标题、网站地址、meta description、作者、作者主页、OG 图、语言方向、theme color。
+- 可配置 footer 版权文案、footer 说明、GitHub、X/Twitter、LinkedIn、邮箱。
+- 这些设置会由服务器渲染到公开页面，不需要前台额外请求。
+
+评论审核：
+
+- 入口：`/admin/comments`
+- 新评论默认为 `pending`。
+- 后台可以 approve、reject、delete。
+
+## SEO 与性能原则
+
+当前工程的公开页性能策略：
+
+- 公开页面由 Astro SSR 输出完整 HTML。
+- SEO 标签在服务端生成，包括 title、description、canonical、OG、Twitter、JSON-LD。
+- Markdown 不在公开请求时渲染；后台保存时已生成 `body_html`。
+- R2 上传能力只在后台编辑器加载，不影响公开文章页 JS。
+- 上传文件在文章中只是普通 Markdown 图片或文件链接。
+- 评论 JS 只在文章详情页加载。
+- 后台 React/TanStack 代码只在后台路由加载。
+- D1 查询尽量按 slug、发布状态、分页、物化标签计数控制扫描成本。
+- Pagefind 是构建时搜索索引；大量新增或修改文章后，需要重新构建部署以更新静态搜索索引。
+
+## R2 上传安全说明
+
+上传接口：
+
+```text
+POST /api/uploads
+```
+
+安全策略：
+
+- 上传接口属于后台 API，需要后台认证。
+- 单文件最大 15 MB。
+- 单次最多上传 10 个文件。
+- 禁止 HTML、SVG 等更容易产生 XSS 风险的类型。
+- R2 bucket 不公开，公开读取走 `/uploads/...`。
+- 公开读取响应设置长缓存和 `X-Content-Type-Options: nosniff`。
+
+## 常用命令
 
 ```bash
+npm run dev
 npm run build
 npm run lint
 npm run format:check
+npm run backfill:rendered
 npx wrangler d1 migrations apply astro-paper --remote
 npx wrangler pages deploy dist --project-name astro-paper
 ```
 
-## Production Checklist
+## 生产环境上线清单
 
-- Replace default admin credentials.
-- Set a long random `COMMENT_HASH_SECRET`.
-- Apply D1 migrations remotely.
-- Confirm `wrangler.jsonc` points to the correct D1 and KV ids.
-- Confirm `wrangler.jsonc` points to the correct R2 bucket.
-- Configure the canonical `website` value in `/admin/settings`.
-- Verify RSS, sitemap, article pages, and Pagefind after deployment.
+- 替换默认后台账号密码。
+- 设置足够长的 `COMMENT_HASH_SECRET`。
+- 确认 `wrangler.jsonc` 中 D1 `database_id` 正确。
+- 确认 `SESSION` KV namespace id 正确。
+- 确认 `UPLOADS` R2 bucket 名称正确。
+- 远端执行所有 D1 migrations。
+- 在 `/admin/settings` 中配置正确的网站 canonical 地址。
+- 验证 RSS、sitemap、首页、文章页、标签页。
+- 验证后台上传文件后 `/uploads/...` 可访问。
+- 大量内容变更后重新构建部署，更新 Pagefind 索引。
