@@ -34,7 +34,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
     posts.map(post => post.id)
   );
 
-  const postTagMap = new Map<number, { id: number; name: string; slug: string }[]>();
+  const postTagMap = new Map<
+    number,
+    { id: number; name: string; slug: string }[]
+  >();
   for (const row of postTags) {
     const list = postTagMap.get(row.post_id) || [];
     list.push({
@@ -71,7 +74,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const slug = slugifyStr(body.slug || body.title);
   if (!slug) {
-    return Response.json({ error: "Post URL slug is required" }, { status: 400 });
+    return Response.json(
+      { error: "Post URL slug is required" },
+      { status: 400 }
+    );
   }
 
   const existing = await getPostBySlug(db, slug);
@@ -81,6 +87,21 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const now = new Date().toISOString();
   const sourceBody = body.body || "";
+  const tagNames: string[] =
+    body.tags === undefined
+      ? []
+      : Array.isArray(body.tags)
+        ? body.tags.filter(
+            (tag: unknown): tag is string => typeof tag === "string"
+          )
+        : [];
+  if (body.tags !== undefined && !Array.isArray(body.tags)) {
+    return Response.json({ error: "Tags must be an array" }, { status: 400 });
+  }
+  if (Array.isArray(body.tags) && tagNames.length !== body.tags.length) {
+    return Response.json({ error: "Tags must be strings" }, { status: 400 });
+  }
+
   const { renderPostContent } = await import("@/utils/renderPostContent");
   const rendered = await renderPostContent(sourceBody);
   const pubDatetime = body.pubDatetime || now;
@@ -113,7 +134,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return Response.json({ error: "Unable to create post" }, { status: 500 });
   }
 
-  const tagNames: string[] = body.tags || [];
   const postTags = await replacePostTags(db, post.id, tagNames, slugifyStr);
   await refreshTagPostCounts(db);
   await purgePublicCache(request, [
@@ -121,8 +141,5 @@ export const POST: APIRoute = async ({ request, locals }) => {
     ...postTags.map(tag => `/tags/${tag.slug}/`),
   ]);
 
-  return Response.json(
-    { post: toApiPost(post, postTags) },
-    { status: 201 }
-  );
+  return Response.json({ post: toApiPost(post, postTags) }, { status: 201 });
 };

@@ -1,6 +1,7 @@
 import { runHighlighterWithAstro } from "@astrojs/prism/dist/highlighter";
 import { fromHtml } from "hast-util-from-html";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema, type Options } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
 import remarkCollapse from "remark-collapse";
 import remarkGfm from "remark-gfm";
@@ -31,13 +32,51 @@ type HastNode = {
   children?: HastNode[];
 };
 
+const sanitizeSchema: Options = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), "figure", "figcaption"],
+  attributes: {
+    ...defaultSchema.attributes,
+    a: [
+      ...(defaultSchema.attributes?.a || []),
+      "className",
+      "target",
+      "rel",
+      "title",
+    ],
+    code: [
+      ...(defaultSchema.attributes?.code || []),
+      ["className", /^language-./],
+      "is:raw",
+    ],
+    figcaption: ["className", "title"],
+    figure: ["className", "title"],
+    img: [
+      ...(defaultSchema.attributes?.img || []),
+      "className",
+      "loading",
+      "decoding",
+    ],
+    pre: [
+      ...(defaultSchema.attributes?.pre || []),
+      "className",
+      "data-language",
+    ],
+    span: [...(defaultSchema.attributes?.span || []), "className"],
+  },
+  protocols: defaultSchema.protocols,
+};
+
 function textContent(node: HastNode): string {
   if (node.type === "text" || node.type === "raw") return node.value ?? "";
   return node.children?.map(textContent).join("") ?? "";
 }
 
 function rehypeHeadingIds() {
-  return (tree: HastNode, file: { data: { astro?: { headings?: RenderedHeading[] } } }) => {
+  return (
+    tree: HastNode,
+    file: { data: { astro?: { headings?: RenderedHeading[] } } }
+  ) => {
     const headings: RenderedHeading[] = [];
     const slugger = new Slugger();
 
@@ -48,8 +87,7 @@ function rehypeHeadingIds() {
           const depth = Number(match[1]);
           const text = textContent(node).trim();
           const properties = node.properties ?? {};
-          const existingId = typeof properties.id === "string" ? properties.id : "";
-          const slug = existingId || slugger.slug(text);
+          const slug = slugger.slug(text);
 
           node.properties = { ...properties, id: slug };
           headings.push({ depth, slug, text });
@@ -76,11 +114,18 @@ function rehypePrism() {
 
       const className = code.properties?.className;
       const classes = Array.isArray(className) ? className.map(String) : [];
-      const languageClass = classes.find(value => value.startsWith("language-"));
+      const languageClass = classes.find(value =>
+        value.startsWith("language-")
+      );
       const language = languageClass?.replace("language-", "");
       if (!language) return;
 
-      const highlighted = runHighlighterWithAstro(language, textContent(code));
+      let highlighted: ReturnType<typeof runHighlighterWithAstro>;
+      try {
+        highlighted = runHighlighterWithAstro(language, textContent(code));
+      } catch {
+        return;
+      }
       const fragment = fromHtml(
         `<pre class="${highlighted.classLanguage}" data-language="${language}"><code is:raw class="${highlighted.classLanguage}">${highlighted.html}</code></pre>`,
         { fragment: true }
@@ -94,7 +139,9 @@ function rehypePrism() {
 
     function visitNode(node: HastNode, index?: number, parent?: HastNode) {
       walk(node, index, parent);
-      node.children?.forEach((child, childIndex) => visitNode(child, childIndex, node));
+      node.children?.forEach((child, childIndex) =>
+        visitNode(child, childIndex, node)
+      );
     }
 
     visitNode(tree);
@@ -109,9 +156,10 @@ const processor = unified()
   .use(remarkCollapse, { test: "Table of contents" })
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
+  .use(rehypeSanitize, sanitizeSchema)
   .use(rehypeHeadingIds)
   .use(rehypePrism)
-  .use(rehypeStringify, { allowDangerousHtml: true });
+  .use(rehypeStringify);
 
 function extractSearchText(markdown: string) {
   return markdown

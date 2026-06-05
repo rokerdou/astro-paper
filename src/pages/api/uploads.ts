@@ -46,12 +46,29 @@ function markdownForFile(name: string, url: string, contentType: string) {
     : `[${label}](${url})`;
 }
 
+function validateFile(file: File): { error: string; status: number } | null {
+  if (file.size <= 0) return { error: `${file.name} is empty`, status: 400 };
+  if (file.size > MAX_UPLOAD_SIZE) {
+    return { error: `${file.name} exceeds 15 MB`, status: 413 };
+  }
+  if (!ALLOWED_TYPES.has(file.type)) {
+    return {
+      error: `${file.name} has unsupported type ${file.type || "unknown"}`,
+      status: 415,
+    };
+  }
+  return null;
+}
+
 export const POST: APIRoute = async ({ request, locals }) => {
   let formData: FormData;
   try {
     formData = await request.formData();
   } catch {
-    return Response.json({ error: "Expected multipart form data" }, { status: 400 });
+    return Response.json(
+      { error: "Expected multipart form data" },
+      { status: 400 }
+    );
   }
 
   const files = formData
@@ -63,28 +80,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   if (files.length > 10) {
-    return Response.json({ error: "Upload at most 10 files at a time" }, { status: 400 });
+    return Response.json(
+      { error: "Upload at most 10 files at a time" },
+      { status: 400 }
+    );
+  }
+
+  for (const file of files) {
+    const validation = validateFile(file);
+    if (validation) {
+      return Response.json(
+        { error: validation.error },
+        { status: validation.status }
+      );
+    }
   }
 
   const bucket = getUploadsBucket(locals);
   const uploads = [];
 
   for (const file of files) {
-    if (file.size <= 0) {
-      return Response.json({ error: `${file.name} is empty` }, { status: 400 });
-    }
-
-    if (file.size > MAX_UPLOAD_SIZE) {
-      return Response.json({ error: `${file.name} exceeds 15 MB` }, { status: 413 });
-    }
-
-    if (!ALLOWED_TYPES.has(file.type)) {
-      return Response.json(
-        { error: `${file.name} has unsupported type ${file.type || "unknown"}` },
-        { status: 415 }
-      );
-    }
-
     const key = uploadKey(file);
     const url = `/${key}`;
 

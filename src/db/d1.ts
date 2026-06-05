@@ -166,7 +166,9 @@ export async function listPosts(db: D1Database) {
 
 export async function listSiteSettings(db: D1Database) {
   const result = await db
-    .prepare("SELECT key, value, updated_at FROM site_settings ORDER BY key ASC")
+    .prepare(
+      "SELECT key, value, updated_at FROM site_settings ORDER BY key ASC"
+    )
     .all<SiteSettingRow>();
   return result.results ?? [];
 }
@@ -223,8 +225,7 @@ export async function listPostSummaries(
      FROM posts
      ${where}
      ORDER BY sort_datetime DESC, id DESC
-     ${limit}`
-      + (offset ? ` ${offset}` : "")
+     ${limit}` + (offset ? ` ${offset}` : "")
   );
 
   const values = [
@@ -283,7 +284,11 @@ export async function getPostStats(db: D1Database) {
         SUM(CASE WHEN draft = 1 THEN 1 ELSE 0 END) AS drafts
        FROM posts`
     )
-    .first<{ total: number; published: number | null; drafts: number | null }>();
+    .first<{
+      total: number;
+      published: number | null;
+      drafts: number | null;
+    }>();
 
   return {
     total: row?.total ?? 0,
@@ -293,7 +298,9 @@ export async function getPostStats(db: D1Database) {
 }
 
 export async function listTags(db: D1Database) {
-  const result = await db.prepare("SELECT * FROM tags ORDER BY name ASC").all<TagRow>();
+  const result = await db
+    .prepare("SELECT * FROM tags ORDER BY name ASC")
+    .all<TagRow>();
   return result.results ?? [];
 }
 
@@ -331,7 +338,10 @@ export async function listPostTags(db: D1Database) {
   return result.results ?? [];
 }
 
-export async function listTagNamesForPostIds(db: D1Database, postIds: number[]) {
+export async function listTagNamesForPostIds(
+  db: D1Database,
+  postIds: number[]
+) {
   if (postIds.length === 0) return [];
 
   const placeholders = postIds.map(() => "?").join(", ");
@@ -376,8 +386,7 @@ export async function listPostSummariesByTag(
          AND posts.draft = 0
          AND posts.pub_datetime <= ?
        ORDER BY posts.sort_datetime DESC, posts.id DESC
-       ${limit}`
-        + (offset ? ` ${offset}` : "")
+       ${limit}` + (offset ? ` ${offset}` : "")
     )
     .bind(...values)
     .all<PostSummaryRow>();
@@ -405,7 +414,14 @@ export async function countPostSummariesByTag(db: D1Database, tagSlug: string) {
 
 export async function refreshTagPostCounts(db: D1Database) {
   const now = nowWithScheduledMargin();
-  await db.batch([
+  await db.batch(tagPostCountStatements(db, now));
+}
+
+function tagPostCountStatements(
+  db: D1Database,
+  now = nowWithScheduledMargin()
+) {
+  return [
     db.prepare("DELETE FROM tag_post_counts"),
     db
       .prepare(
@@ -422,11 +438,14 @@ export async function refreshTagPostCounts(db: D1Database) {
          GROUP BY tags.id`
       )
       .bind(now, now),
-  ]);
+  ];
 }
 
 export async function getPostBySlug(db: D1Database, slug: string) {
-  return db.prepare("SELECT * FROM posts WHERE slug = ?").bind(slug).first<PostRow>();
+  return db
+    .prepare("SELECT * FROM posts WHERE slug = ?")
+    .bind(slug)
+    .first<PostRow>();
 }
 
 export async function getPublishedPostBySlug(db: D1Database, slug: string) {
@@ -512,7 +531,10 @@ export async function searchPublishedPosts(
   const normalizedQuery = query.trim().replace(/\s+/g, " ");
   if (!normalizedQuery) return [];
 
-  const escapedQuery = normalizedQuery.replace(/[\\%_]/g, value => `\\${value}`);
+  const escapedQuery = normalizedQuery.replace(
+    /[\\%_]/g,
+    value => `\\${value}`
+  );
   const pattern = `%${escapedQuery}%`;
 
   const result = await db
@@ -592,6 +614,16 @@ export async function updatePostBySlug(
   slug: string,
   updates: Partial<PostInput>
 ) {
+  const statement = postUpdateStatement(db, slug, updates);
+  if (!statement) return;
+  await statement.run();
+}
+
+function postUpdateStatement(
+  db: D1Database,
+  slug: string,
+  updates: Partial<PostInput>
+) {
   const fields: string[] = [];
   const values: unknown[] = [];
 
@@ -601,33 +633,38 @@ export async function updatePostBySlug(
   };
 
   if (updates.title !== undefined) add("title", updates.title);
-  if (updates.description !== undefined) add("description", updates.description);
+  if (updates.description !== undefined)
+    add("description", updates.description);
   if (updates.body !== undefined) add("body", updates.body);
   if (updates.bodyHtml !== undefined) add("body_html", updates.bodyHtml);
   if (updates.headings !== undefined) add("headings", updates.headings);
   if (updates.searchText !== undefined) add("search_text", updates.searchText);
   if (updates.slug !== undefined) add("slug", updates.slug);
   if (updates.author !== undefined) add("author", updates.author);
-  if (updates.pubDatetime !== undefined) add("pub_datetime", updates.pubDatetime);
-  if (updates.modDatetime !== undefined) add("mod_datetime", updates.modDatetime);
-  if (updates.sortDatetime !== undefined) add("sort_datetime", updates.sortDatetime);
-  if (updates.featured !== undefined) add("featured", boolToInt(updates.featured));
+  if (updates.pubDatetime !== undefined)
+    add("pub_datetime", updates.pubDatetime);
+  if (updates.modDatetime !== undefined)
+    add("mod_datetime", updates.modDatetime);
+  if (updates.sortDatetime !== undefined)
+    add("sort_datetime", updates.sortDatetime);
+  if (updates.featured !== undefined)
+    add("featured", boolToInt(updates.featured));
   if (updates.draft !== undefined) add("draft", boolToInt(updates.draft));
   if (updates.ogImage !== undefined) add("og_image", updates.ogImage);
   if (updates.coverImage !== undefined) add("cover_image", updates.coverImage);
-  if (updates.canonicalUrl !== undefined) add("canonical_url", updates.canonicalUrl);
+  if (updates.canonicalUrl !== undefined)
+    add("canonical_url", updates.canonicalUrl);
   if (updates.hideEditPost !== undefined) {
     add("hide_edit_post", boolToInt(updates.hideEditPost));
   }
   if (updates.timezone !== undefined) add("timezone", updates.timezone);
   if (updates.updatedAt !== undefined) add("updated_at", updates.updatedAt);
 
-  if (fields.length === 0) return;
+  if (fields.length === 0) return null;
 
-  await db
+  return db
     .prepare(`UPDATE posts SET ${fields.join(", ")} WHERE slug = ?`)
-    .bind(...values, slug)
-    .run();
+    .bind(...values, slug);
 }
 
 export async function deletePostBySlug(db: D1Database, slug: string) {
@@ -635,7 +672,10 @@ export async function deletePostBySlug(db: D1Database, slug: string) {
 }
 
 export async function findTagBySlug(db: D1Database, slug: string) {
-  return db.prepare("SELECT * FROM tags WHERE slug = ?").bind(slug).first<TagRow>();
+  return db
+    .prepare("SELECT * FROM tags WHERE slug = ?")
+    .bind(slug)
+    .first<TagRow>();
 }
 
 export async function createTag(db: D1Database, name: string, slug: string) {
@@ -645,7 +685,11 @@ export async function createTag(db: D1Database, name: string, slug: string) {
     .first<TagRow>();
 }
 
-export async function getOrCreateTag(db: D1Database, name: string, slug: string) {
+export async function getOrCreateTag(
+  db: D1Database,
+  name: string,
+  slug: string
+) {
   return (await findTagBySlug(db, slug)) ?? (await createTag(db, name, slug));
 }
 
@@ -655,19 +699,58 @@ export async function replacePostTags(
   tagNames: string[],
   slugify: (tag: string) => string
 ) {
-  await db.prepare("DELETE FROM posts_tags WHERE post_id = ?").bind(postId).run();
+  await db
+    .prepare("DELETE FROM posts_tags WHERE post_id = ?")
+    .bind(postId)
+    .run();
 
   const tags: TagRow[] = [];
   for (const tagName of tagNames) {
     const tag = await getOrCreateTag(db, tagName, slugify(tagName));
     if (!tag) continue;
     await db
-      .prepare("INSERT OR IGNORE INTO posts_tags (post_id, tag_id) VALUES (?, ?)")
+      .prepare(
+        "INSERT OR IGNORE INTO posts_tags (post_id, tag_id) VALUES (?, ?)"
+      )
       .bind(postId, tag.id)
       .run();
     tags.push(tag);
   }
 
+  return tags;
+}
+
+export async function updatePostAndTags(
+  db: D1Database,
+  slug: string,
+  postId: number,
+  updates: Partial<PostInput>,
+  tagNames: string[],
+  slugify: (tag: string) => string
+) {
+  const tags: TagRow[] = [];
+
+  for (const tagName of tagNames) {
+    const tag = await getOrCreateTag(db, tagName, slugify(tagName));
+    if (tag) tags.push(tag);
+  }
+
+  const updateStatement = postUpdateStatement(db, slug, updates);
+  const now = nowWithScheduledMargin();
+  const statements = [
+    ...(updateStatement ? [updateStatement] : []),
+    db.prepare("DELETE FROM posts_tags WHERE post_id = ?").bind(postId),
+    ...tags.map(tag =>
+      db
+        .prepare(
+          "INSERT OR IGNORE INTO posts_tags (post_id, tag_id) VALUES (?, ?)"
+        )
+        .bind(postId, tag.id)
+    ),
+    ...tagPostCountStatements(db, now),
+  ];
+
+  await db.batch(statements);
   return tags;
 }
 

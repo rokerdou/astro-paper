@@ -5,8 +5,8 @@ import {
   getTagsForPost,
   getPostWithTags,
   refreshTagPostCounts,
-  replacePostTags,
   toApiPost,
+  updatePostAndTags,
   updatePostBySlug,
 } from "@/db/d1";
 import { getD1 } from "@/utils/cloudflare";
@@ -37,25 +37,47 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
   const nextSlug = body.slug !== undefined ? slugifyStr(body.slug) : slug;
   if (!nextSlug) {
-    return Response.json({ error: "Post URL slug is required" }, { status: 400 });
+    return Response.json(
+      { error: "Post URL slug is required" },
+      { status: 400 }
+    );
   }
 
   if (nextSlug !== slug) {
     const slugOwner = await getPostBySlug(db, nextSlug);
     if (slugOwner) {
-      return Response.json({ error: "Post URL already exists" }, { status: 409 });
+      return Response.json(
+        { error: "Post URL already exists" },
+        { status: 409 }
+      );
     }
   }
 
-  const rendered = body.body !== undefined
-    ? await import("@/utils/renderPostContent").then(({ renderPostContent }) =>
-        renderPostContent(body.body)
-      )
-    : null;
+  const tagNames: string[] =
+    body.tags === undefined
+      ? []
+      : Array.isArray(body.tags)
+        ? body.tags.filter(
+            (tag: unknown): tag is string => typeof tag === "string"
+          )
+        : [];
+  if (body.tags !== undefined && !Array.isArray(body.tags)) {
+    return Response.json({ error: "Tags must be an array" }, { status: 400 });
+  }
+  if (Array.isArray(body.tags) && tagNames.length !== body.tags.length) {
+    return Response.json({ error: "Tags must be strings" }, { status: 400 });
+  }
+
+  const rendered =
+    body.body !== undefined
+      ? await import("@/utils/renderPostContent").then(
+          ({ renderPostContent }) => renderPostContent(body.body)
+        )
+      : null;
   const pubDatetime = body.pubDatetime ?? existing.pub_datetime;
   const modDatetime = body.modDatetime ?? existing.mod_datetime;
 
-  await updatePostBySlug(db, slug, {
+  const updates = {
     ...(nextSlug !== slug && { slug: nextSlug }),
     ...(body.title !== undefined && { title: body.title }),
     ...(body.description !== undefined && { description: body.description }),
@@ -78,16 +100,28 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     ...(body.canonicalUrl !== undefined && { canonicalUrl: body.canonicalUrl }),
     ...(body.timezone !== undefined && { timezone: body.timezone }),
     updatedAt: now,
-  });
+  };
 
-  const oldTags = body.tags !== undefined ? await getTagsForPost(db, existing.id) : [];
+  const oldTags =
+    body.tags !== undefined ? await getTagsForPost(db, existing.id) : [];
   const newTags =
     body.tags !== undefined
-      ? await replacePostTags(db, existing.id, body.tags, slugifyStr)
+      ? await updatePostAndTags(
+          db,
+          slug,
+          existing.id,
+          updates,
+          tagNames,
+          slugifyStr
+        )
       : [];
 
+  if (body.tags === undefined) {
+    await updatePostBySlug(db, slug, updates);
+    await refreshTagPostCounts(db);
+  }
+
   const updated = await getPostWithTags(db, nextSlug);
-  await refreshTagPostCounts(db);
   await purgePublicCache(request, [
     `/posts/${slug}/`,
     `/posts/${nextSlug}/`,

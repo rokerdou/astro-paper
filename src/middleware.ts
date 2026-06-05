@@ -54,6 +54,15 @@ function isAdminRequest(request: Request) {
   return ADMIN_PATHS.some(pattern => pattern.test(url.pathname));
 }
 
+function isStateChangingRequest(request: Request) {
+  return !["GET", "HEAD", "OPTIONS"].includes(request.method);
+}
+
+function isSameOriginRequest(request: Request) {
+  const origin = request.headers.get("Origin");
+  return Boolean(origin && origin === new URL(request.url).origin);
+}
+
 function unauthorized(message = "Authentication required") {
   return new Response(message, {
     status: 401,
@@ -90,7 +99,9 @@ function isAuthenticatedAdmin(request: Request, env: AdminEnv) {
   }
 
   const auth = readBasicAuth(request);
-  return Boolean(auth && auth.username === username && auth.password === password);
+  return Boolean(
+    auth && auth.username === username && auth.password === password
+  );
 }
 
 export const onRequest = defineMiddleware(async ({ request, locals }, next) => {
@@ -102,6 +113,17 @@ export const onRequest = defineMiddleware(async ({ request, locals }, next) => {
         ? "Admin credentials are not configured."
         : "Authentication required"
     );
+  }
+
+  if (
+    isAdminRequest(request) &&
+    isStateChangingRequest(request) &&
+    !isSameOriginRequest(request)
+  ) {
+    return new Response("Invalid request origin", {
+      status: 403,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   if (!canUseWorkerCache() || !isCacheableRequest(request)) {
