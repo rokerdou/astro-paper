@@ -1,7 +1,7 @@
 # AstroPaper Cloudflare SSR
 
 AstroPaper Cloudflare SSR is a blog system built on Astro, React, TanStack Query,
-Cloudflare Pages Workers, D1, KV, and Pagefind. It keeps Astro's server-rendered
+Cloudflare Pages Workers, D1, KV, R2, and Pagefind. It keeps Astro's server-rendered
 HTML and SEO strengths while adding a database-backed admin console for posts,
 site settings, comments, and tags.
 
@@ -16,6 +16,8 @@ site settings, comments, and tags.
 - Admin pages use React and TanStack Query. Public article pages do not hydrate
   the admin editor code.
 - Sessions use the `SESSION` KV namespace.
+- Uploaded article images and files are stored in R2 and served through the
+  same Pages Worker under `/uploads/...`.
 - Public cache is purged after post, comment, tag, or site setting changes.
 
 ## Requirements
@@ -51,6 +53,12 @@ Create a KV namespace for admin sessions:
 npx wrangler kv namespace create SESSION
 ```
 
+Create an R2 bucket for article assets:
+
+```bash
+npx wrangler r2 bucket create astro-paper-assets
+```
+
 Copy the generated ids into `wrangler.jsonc`:
 
 ```jsonc
@@ -68,6 +76,12 @@ Copy the generated ids into `wrangler.jsonc`:
     {
       "binding": "SESSION",
       "id": "your-kv-namespace-id"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "astro-paper-assets"
     }
   ]
 }
@@ -124,6 +138,11 @@ The important D1 tables are:
 - `comments`: article comments and moderation status.
 - `site_settings`: runtime site title, SEO metadata, footer links, and copyright.
 
+Uploaded files are stored in R2 using keys like
+`uploads/2026/06/{timestamp}-{id}-{filename}`. Public Markdown links point to
+`/uploads/...`, which keeps the bucket private while allowing public reads
+through the Worker.
+
 ## Local Development
 
 Start Astro locally:
@@ -179,6 +198,9 @@ Posts:
 - New posts can leave the URL empty; it is generated from the title.
 - Editing a post URL updates the existing row and purges both the old and new
   article URLs from the public cache.
+- Drag images or files onto the Markdown editor, or use the Upload button.
+  Uploaded images are inserted as Markdown images; other allowed files are
+  inserted as Markdown links.
 
 Site settings:
 
@@ -201,6 +223,8 @@ Comments:
 - Markdown rendering is not performed on normal public page requests. The
   rendered HTML is saved with the post.
 - Admin React bundles are only loaded on admin routes.
+- Upload UI and R2 writes are admin-only. Public pages only render normal
+  Markdown image/file links.
 - Comment JavaScript is isolated to article pages that render comments.
 - Site settings are read server-side. They do not add a public client-side fetch.
 - D1 queries use slug, publication status, pagination, and tag count structures
@@ -224,5 +248,6 @@ npx wrangler pages deploy dist --project-name astro-paper
 - Set a long random `COMMENT_HASH_SECRET`.
 - Apply D1 migrations remotely.
 - Confirm `wrangler.jsonc` points to the correct D1 and KV ids.
+- Confirm `wrangler.jsonc` points to the correct R2 bucket.
 - Configure the canonical `website` value in `/admin/settings`.
 - Verify RSS, sitemap, article pages, and Pagefind after deployment.

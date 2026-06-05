@@ -1,10 +1,14 @@
-import { useState, useCallback } from "react";
+import { useRef, useState, useCallback, type DragEvent } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { slugifyStr } from "@/utils/slugify";
 import { useCreatePost, useUpdatePost, type Post, type CreatePostInput, type UpdatePostInput } from "./hooks";
 import { vars, input, label, card, btnPrimary, btnSecondary } from "./styles";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
+
+interface UploadedAsset {
+  markdown: string;
+}
 
 const responsiveCss = `
 @media (max-width: 640px) {
@@ -19,6 +23,8 @@ function PostEditorInner({ post }: { post?: Post }) {
   const isEdit = !!post;
   const createPost = useCreatePost();
   const updatePost = useUpdatePost();
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [title, setTitle] = useState(post?.title || "");
   const [slug, setSlug] = useState(post?.slug || "");
@@ -31,8 +37,66 @@ function PostEditorInner({ post }: { post?: Post }) {
   const [tagInput, setTagInput] = useState(post?.tags.map(t => t.name).join(", ") || "");
   const [body, setBody] = useState(post?.body || "");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  const insertMarkdown = useCallback((markdown: string) => {
+    const textarea = textareaRef.current;
+    const start = textarea?.selectionStart ?? body.length;
+    const end = textarea?.selectionEnd ?? body.length;
+    const before = body.slice(0, start);
+    const after = body.slice(end);
+    const prefix = before && !before.endsWith("\n") ? "\n" : "";
+    const suffix = after && !after.startsWith("\n") ? "\n" : "";
+    const insertion = `${prefix}${markdown}${suffix}`;
+    const nextBody = `${before}${insertion}${after}`;
+
+    setBody(nextBody);
+    requestAnimationFrame(() => {
+      textarea?.focus();
+      const cursor = start + insertion.length;
+      textarea?.setSelectionRange(cursor, cursor);
+    });
+  }, [body]);
+
+  const uploadFiles = useCallback(async (files: FileList | File[]) => {
+    const selectedFiles = Array.from(files);
+    if (selectedFiles.length === 0) return;
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      for (const file of selectedFiles) {
+        formData.append("files", file);
+      }
+
+      const response = await fetch("/api/uploads", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to upload files");
+
+      const markdown = (data.uploads as UploadedAsset[])
+        .map(upload => upload.markdown)
+        .join("\n\n");
+      insertMarkdown(markdown);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to upload files");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [insertMarkdown]);
+
+  const handleDrop = useCallback((event: DragEvent<HTMLTextAreaElement>) => {
+    if (event.dataTransfer.files.length === 0) return;
+    event.preventDefault();
+    void uploadFiles(event.dataTransfer.files);
+  }, [uploadFiles]);
 
   const handleSave = useCallback(async () => {
     if (!title.trim()) return;
@@ -228,17 +292,45 @@ function PostEditorInner({ post }: { post?: Post }) {
           }}>
             Markdown
           </span>
-          <span style={{
-            fontSize: "0.6875rem",
-            color: "var(--muted-foreground)",
-            fontFamily: vars.mono,
-          }}>
-            {body.length} chars
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{
+              fontSize: "0.6875rem",
+              color: "var(--muted-foreground)",
+              fontFamily: vars.mono,
+              whiteSpace: "nowrap",
+            }}>
+              {body.length} chars
+            </span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              onChange={event => {
+                if (event.target.files) void uploadFiles(event.target.files);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              style={{
+                ...btnSecondary,
+                padding: "0.375rem 0.75rem",
+                opacity: uploading ? 0.55 : 1,
+                cursor: uploading ? "not-allowed" : "pointer",
+              }}
+            >
+              {uploading ? "Uploading..." : "Upload"}
+            </button>
+          </div>
         </div>
         <textarea
+          ref={textareaRef}
           value={body}
           onChange={e => setBody(e.target.value)}
+          onDragOver={event => event.preventDefault()}
+          onDrop={handleDrop}
           spellCheck={false}
           className="pe-body"
           style={{
@@ -256,7 +348,7 @@ function PostEditorInner({ post }: { post?: Post }) {
             boxSizing: "border-box",
             tabSize: 2,
           }}
-          placeholder="Write your markdown content here..."
+          placeholder="Write your markdown content here. Drop images or files to upload and insert a Markdown link."
         />
       </div>
 

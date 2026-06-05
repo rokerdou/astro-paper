@@ -2,6 +2,7 @@ import type { Runtime } from "@astrojs/cloudflare";
 
 interface CloudflareEnv {
   DB: D1Database;
+  UPLOADS: R2Bucket;
   ADMIN_USERNAME?: string;
   ADMIN_PASSWORD?: string;
   COMMENT_HASH_SECRET?: string;
@@ -26,6 +27,34 @@ declare global {
     prepare(query: string): D1PreparedStatement;
     batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
     exec(query: string): Promise<D1Result>;
+  }
+
+  interface R2ObjectBody {
+    body: ReadableStream;
+    httpMetadata?: {
+      contentType?: string;
+      contentDisposition?: string;
+      cacheControl?: string;
+    };
+    writeHttpMetadata(headers: Headers): void;
+  }
+
+  interface R2PutOptions {
+    httpMetadata?: {
+      contentType?: string;
+      contentDisposition?: string;
+      cacheControl?: string;
+    };
+    customMetadata?: Record<string, string>;
+  }
+
+  interface R2Bucket {
+    get(key: string): Promise<R2ObjectBody | null>;
+    put(
+      key: string,
+      value: ReadableStream | ArrayBuffer | ArrayBufferView | string | Blob,
+      options?: R2PutOptions
+    ): Promise<unknown>;
   }
 }
 

@@ -7,6 +7,7 @@ const ADMIN_PATHS = [
   /^\/api\/posts(?:\/|$)/,
   /^\/api\/settings(?:\/|$)/,
   /^\/api\/tags(?:\/|$)/,
+  /^\/api\/uploads(?:\/|$)/,
 ];
 const CACHEABLE_PATHS = [
   /^\/$/,

@@ -16,5 +16,11 @@
       "binding": "SESSION",
       "id": "b04dd0cce77042d89b74eca301f13bd8"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "astro-paper-assets"
+    }
   ]
 }
