@@ -10,25 +10,20 @@ export interface Props {
 const { tag, tagName, size = "sm" } = Astro.props;
 ---
 
-<li
-  class:list={[
-    "group inline-block transition-transform duration-200 group-hover:translate-x-1",
-    size === "sm" ? "my-1 underline-offset-4" : "mx-1 my-3 underline-offset-4",
-  ]}
->
+<li class:list={["group inline-block", size === "sm" ? "my-1" : "mx-1 my-2"]}>
   <a
     href={`/tags/${tag}/`}
     transition:name={tag}
     class:list={[
-      "relative text-lg underline hover:text-accent focus-visible:outline-accent",
-      { "text-sm": size === "sm" },
+      "relative inline-flex items-center rounded-full border border-border bg-card font-mono text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-accent",
+      size === "sm" ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-xs",
     ]}
   >
     <IconHash
       class:list={[
-        "inline-block opacity-80",
-        { "me-1.5 size-4": size === "sm" },
-        { "me-2 size-6": size === "lg" },
+        "inline-block opacity-70",
+        { "me-1 size-3": size === "sm" },
+        { "me-1.5 size-3.5": size === "lg" },
       ]}
     />
     <span>{tagName}</span>

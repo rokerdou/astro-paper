@@ -11,41 +11,43 @@ const { headings } = Astro.props;
 const toc = headings.filter(({ depth }) => depth > 1 && depth <= 3);
 ---
 
-{toc.length > 0 && (
-  <nav class="toc-container hidden xl:block">
-    <div class="toc-wrapper sticky top-24 max-h-[calc(100vh-6rem)] overflow-y-auto">
-      <h2 class="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">
-        Table of Contents
-      </h2>
-      <ul class="toc-list space-y-2 text-sm">
-        {toc.map((heading) => (
-          <li
-            class:list={[
-              "toc-item",
-              {
-                "pl-0": heading.depth === 2,
-                "pl-4": heading.depth === 3,
-              },
-            ]}
-          >
-            <a
-              href={`#${heading.slug}`}
-              class="toc-link block py-1 text-muted-foreground hover:text-accent transition-colors border-l-2 border-transparent hover:border-accent pl-3 -ml-3"
-              data-heading-slug={heading.slug}
+{
+  toc.length > 0 && (
+    <nav class="toc-container hidden xl:block">
+      <div class="toc-wrapper sticky top-24 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-[18px] border border-border bg-card p-4">
+        <h2 class="mb-4 text-xs font-medium text-muted-foreground uppercase">
+          Table of Contents
+        </h2>
+        <ul class="toc-list space-y-2 text-sm">
+          {toc.map(heading => (
+            <li
+              class:list={[
+                "toc-item",
+                {
+                  "pl-0": heading.depth === 2,
+                  "pl-4": heading.depth === 3,
+                },
+              ]}
             >
-              {heading.text}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </nav>
-)}
+              <a
+                href={`#${heading.slug}`}
+                class="toc-link -ml-3 block border-l-2 border-transparent py-1 pl-3 text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+                data-heading-slug={heading.slug}
+              >
+                {heading.text}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </nav>
+  )
+}
 
 <style>
   .toc-link.active {
-    color: var(--color-accent);
-    border-color: var(--color-accent);
+    color: var(--color-foreground);
+    border-color: var(--color-foreground);
     font-weight: 500;
   }
 
@@ -71,8 +73,8 @@ const toc = headings.filter(({ depth }) => depth > 1 && depth <= 3);
 <script>
   function initTOC() {
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
+      entries => {
+        entries.forEach(entry => {
           const id = entry.target.getAttribute("id");
           const tocLink = document.querySelector(
             `.toc-link[data-heading-slug="${id}"]`
@@ -80,7 +82,7 @@ const toc = headings.filter(({ depth }) => depth > 1 && depth <= 3);
 
           if (entry.isIntersecting) {
             // Remove active class from all links
-            document.querySelectorAll(".toc-link").forEach((link) => {
+            document.querySelectorAll(".toc-link").forEach(link => {
               link.classList.remove("active");
             });
             // Add active class to current link
@@ -95,7 +97,7 @@ const toc = headings.filter(({ depth }) => depth > 1 && depth <= 3);
     );
 
     // Observe all headings
-    document.querySelectorAll("article h2, article h3").forEach((heading) => {
+    document.querySelectorAll("article h2, article h3").forEach(heading => {
       observer.observe(heading);
     });
   }

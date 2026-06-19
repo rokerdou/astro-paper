@@ -155,30 +155,30 @@ function CommentsInner({ slug }: Props) {
     return (
       <form className="space-y-3" onSubmit={onSubmit}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm font-medium text-skin-base">
+          <label className="block text-sm font-medium text-foreground">
             Name
             <input
-              className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+              className="mt-1 w-full rounded-[8px] border border-border bg-background px-3 py-2 text-sm transition-colors outline-none focus:border-ring"
               maxLength={80}
               required
               value={authorName}
               onChange={event => setAuthorName(event.target.value)}
             />
           </label>
-          <label className="block text-sm font-medium text-skin-base">
+          <label className="block text-sm font-medium text-foreground">
             Email
             <input
-              className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+              className="mt-1 w-full rounded-[8px] border border-border bg-background px-3 py-2 text-sm transition-colors outline-none focus:border-ring"
               type="email"
               value={authorEmail}
               onChange={event => setAuthorEmail(event.target.value)}
             />
           </label>
         </div>
-        <label className="block text-sm font-medium text-skin-base">
+        <label className="block text-sm font-medium text-foreground">
           Comment
           <textarea
-            className="mt-1 min-h-28 w-full resize-y rounded border border-border bg-background px-3 py-2 text-sm leading-6 outline-none focus:border-accent"
+            className="mt-1 min-h-28 w-full resize-y rounded-[8px] border border-border bg-background px-3 py-2 text-sm leading-6 transition-colors outline-none focus:border-ring"
             maxLength={2000}
             minLength={2}
             required
@@ -188,7 +188,7 @@ function CommentsInner({ slug }: Props) {
         </label>
         <div className="flex items-center gap-3">
           <button
-            className="rounded bg-accent px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-9 rounded-[8px] bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={submitMutation.isPending}
             type="submit"
           >
@@ -196,7 +196,7 @@ function CommentsInner({ slug }: Props) {
           </button>
           {onCancel && (
             <button
-              className="rounded px-3 py-2 text-sm text-accent hover:underline"
+              className="h-9 rounded-[8px] border border-border px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               type="button"
               onClick={onCancel}
             >
@@ -218,18 +218,21 @@ function CommentsInner({ slug }: Props) {
     const [replying, setReplying] = useState(false);
 
     return (
-      <article className="rounded border border-border bg-background p-4">
+      <article className="rounded-[10px] border border-border bg-card p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="text-base font-semibold">{comment.authorName}</h3>
-          <time className="text-xs text-skin-base/70" dateTime={comment.createdAt}>
+          <h3 className="text-sm font-semibold">{comment.authorName}</h3>
+          <time
+            className="font-mono text-[11px] text-muted-foreground"
+            dateTime={comment.createdAt}
+          >
             {formatDate(comment.createdAt)}
           </time>
         </div>
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-skin-base">
+        <p className="mt-3 text-sm leading-6 whitespace-pre-wrap text-foreground">
           {comment.content}
         </p>
         <button
-          className="mt-3 text-sm font-medium text-accent hover:underline"
+          className="mt-3 text-sm font-medium text-muted-foreground underline decoration-muted-foreground/30 decoration-dashed underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground"
           type="button"
           onClick={() => setReplying(value => !value)}
         >
@@ -248,14 +251,20 @@ function CommentsInner({ slug }: Props) {
         {replies.length > 0 && (
           <div className="mt-4 space-y-3 border-l border-border pl-4">
             {replies.map(reply => (
-              <article className="rounded bg-skin-card p-3" key={reply.id}>
+              <article
+                className="rounded-[10px] bg-muted/50 p-3"
+                key={reply.id}
+              >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h4 className="text-sm font-semibold">{reply.authorName}</h4>
-                  <time className="text-xs text-skin-base/70" dateTime={reply.createdAt}>
+                  <time
+                    className="font-mono text-[11px] text-muted-foreground"
+                    dateTime={reply.createdAt}
+                  >
                     {formatDate(reply.createdAt)}
                   </time>
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
+                <p className="mt-2 text-sm leading-6 whitespace-pre-wrap">
                   {reply.content}
                 </p>
               </article>
@@ -269,15 +278,18 @@ function CommentsInner({ slug }: Props) {
   return (
     <section className="space-y-6" aria-labelledby="comments-title">
       <div>
-        <h2 id="comments-title" className="text-2xl font-semibold">
+        <h2
+          id="comments-title"
+          className="text-2xl font-semibold tracking-normal"
+        >
           Comments
         </h2>
-        <p className="mt-1 text-sm text-skin-base/70">
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
           Comments are reviewed before they appear.
         </p>
       </div>
 
-      <div className="rounded border border-border bg-skin-card p-4">
+      <div className="rounded-[18px] border border-border bg-card p-4">
         <CommentForm />
         {submitMutation.isSuccess && (
           <p className="mt-3 text-sm text-accent">
@@ -291,12 +303,14 @@ function CommentsInner({ slug }: Props) {
         )}
       </div>
 
-      {isLoading && <p className="text-sm text-skin-base/70">Loading comments...</p>}
+      {isLoading && (
+        <p className="text-sm text-muted-foreground">Loading comments...</p>
+      )}
       {error && (
         <p className="text-sm text-red-600">Comments could not be loaded.</p>
       )}
       {!isLoading && !hasComments && (
-        <p className="rounded border border-dashed border-border px-4 py-6 text-sm text-skin-base/70">
+        <p className="rounded-[10px] border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
           No approved comments yet.
         </p>
       )}
@@ -315,18 +329,18 @@ function CommentsInner({ slug }: Props) {
       {data && data.pagination.lastPage > 1 && (
         <nav className="flex items-center justify-between gap-4">
           <button
-            className="rounded border border-border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-9 rounded-[8px] border border-border bg-card px-3 text-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             disabled={page <= 1}
             type="button"
             onClick={() => setPage(value => Math.max(1, value - 1))}
           >
             Previous
           </button>
-          <span className="text-sm text-skin-base/70">
+          <span className="font-mono text-xs text-muted-foreground">
             Page {data.pagination.page} of {data.pagination.lastPage}
           </span>
           <button
-            className="rounded border border-border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-9 rounded-[8px] border border-border bg-card px-3 text-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             disabled={page >= data.pagination.lastPage}
             type="button"
             onClick={() => setPage(value => value + 1)}

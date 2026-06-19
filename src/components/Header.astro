@@ -41,7 +41,7 @@ const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
 ---
 
 <header
-  class="fixed top-0 right-0 left-0 z-50 border-b border-border bg-white shadow-sm dark:bg-[#1a1a1a]"
+  class="fixed top-0 right-0 left-0 z-50 border-b border-border bg-background/90 backdrop-blur-xl dark:bg-[#1a1a1a]/90"
 >
   <a
     id="skip-to-content"
@@ -58,12 +58,12 @@ const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
       <div class="flex flex-shrink-0 items-center">
         <a href="/" class="group flex items-center gap-3">
           <div
-            class="rounded bg-foreground px-1.5 py-0.5 font-mono text-xs font-bold text-background transition-transform group-hover:scale-110"
+            class="rounded-[8px] bg-foreground px-2 py-1 font-mono text-xs font-semibold text-background transition-transform group-hover:scale-105"
           >
             &lt;/&gt;
           </div>
           <span
-            class="text-xl font-bold tracking-tight transition-colors group-hover:text-accent"
+            class="text-lg font-semibold tracking-tight transition-colors group-hover:text-accent"
           >
             {siteSettings.title}
           </span>
@@ -82,9 +82,9 @@ const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
                 <a
                   href={tag.path}
                   class:list={[
-                    "truncate px-1.5 text-sm font-medium transition-colors lg:px-2",
+                    "truncate rounded-[8px] px-2 py-1 text-sm font-medium transition-colors",
                     isActive(tag.path)
-                      ? "text-accent"
+                      ? "bg-muted text-foreground"
                       : "text-foreground/60 hover:text-foreground",
                   ]}
                 >
@@ -99,20 +99,20 @@ const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
         </nav>
         <a
           href="/about"
-          class="text-sm font-medium text-foreground/70 transition-colors hover:text-accent"
+          class="rounded-[8px] px-2 py-1 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
         >
           ABOUT
         </a>
         <a
           href="/rss.xml"
-          class="flex items-center gap-1 text-sm font-medium text-foreground/70 transition-colors hover:text-accent"
+          class="flex items-center gap-1 rounded-[8px] px-2 py-1 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
         >
           RSS
           <IconRss width={12} height={12} class="stroke-current" />
         </a>
         <LinkButton
           href="/search"
-          class="text-foreground/70 transition-colors hover:text-accent"
+          class="rounded-[8px] p-1.5 text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
           ariaLabel="search"
           title="Search"
         >
@@ -123,7 +123,7 @@ const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
           SITE.lightAndDarkMode && (
             <button
               id="theme-btn"
-              class="focus-outline relative text-foreground/70 transition-colors hover:text-accent"
+              class="focus-outline relative rounded-[8px] p-1.5 text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
               title="Toggle theme"
               aria-label="auto"
               aria-live="polite"
@@ -149,7 +149,7 @@ const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
           SITE.lightAndDarkMode && (
             <button
               id="theme-btn-mobile"
-              class="focus-outline relative p-2 text-foreground/70 transition-colors hover:text-accent"
+              class="focus-outline relative rounded-[8px] p-2 text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
               title="Toggle theme"
               aria-label="auto"
               aria-live="polite"
@@ -169,7 +169,7 @@ const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
         }
         <button
           id="menu-btn"
-          class="focus-outline p-2 text-foreground hover:text-accent"
+          class="focus-outline rounded-[8px] p-2 text-foreground hover:bg-muted"
           aria-label="Open Menu"
           aria-expanded="false"
           aria-controls="menu-items"
@@ -184,37 +184,37 @@ const topTags = allTags.slice(0, 6).map(({ tag, tagName }) => ({
   {/* 移动端菜单 */}
   <div
     id="menu-items"
-    class="hidden border-t border-border bg-white md:hidden dark:bg-[#1a1a1a]"
+    class="hidden border-t border-border bg-card md:hidden dark:bg-[#1a1a1a]"
   >
     <div class="space-y-1 px-2 pt-2 pb-3">
       <a
         href="/posts"
-        class="block rounded-md px-3 py-2 text-base font-medium text-foreground/80 hover:bg-accent/10 hover:text-foreground"
+        class="block rounded-[8px] px-3 py-2 text-base font-medium text-foreground/80 hover:bg-muted hover:text-foreground"
       >
         Posts
       </a>
       <a
         href="/tags"
-        class="block rounded-md px-3 py-2 text-base font-medium text-foreground/80 hover:bg-accent/10 hover:text-foreground"
+        class="block rounded-[8px] px-3 py-2 text-base font-medium text-foreground/80 hover:bg-muted hover:text-foreground"
       >
         Tags
       </a>
       <a
         href="/search"
-        class="block rounded-md px-3 py-2 text-base font-medium text-foreground/80 hover:bg-accent/10 hover:text-foreground"
+        class="block rounded-[8px] px-3 py-2 text-base font-medium text-foreground/80 hover:bg-muted hover:text-foreground"
       >
         Search
       </a>
       <div class="my-2 border-t border-border"></div>
       <a
         href="/about"
-        class="block rounded-md px-3 py-2 text-base font-medium text-foreground/80 hover:bg-accent/10 hover:text-foreground"
+        class="block rounded-[8px] px-3 py-2 text-base font-medium text-foreground/80 hover:bg-muted hover:text-foreground"
       >
         About
       </a>
       <a
         href="/rss.xml"
-        class="block rounded-md px-3 py-2 text-base font-medium text-foreground/80 hover:bg-accent/10 hover:text-foreground"
+        class="block rounded-[8px] px-3 py-2 text-base font-medium text-foreground/80 hover:bg-muted hover:text-foreground"
       >
         RSS
       </a>

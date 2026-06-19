@@ -15,33 +15,45 @@ const allPosts = await getRuntimePosts(getD1(Astro.locals), { limit: 9 }); // �
 
 <Layout>
   <Header />
-  <main id="main-content" data-layout="index" class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  <main
+    id="main-content"
+    data-layout="index"
+    class="mx-auto w-full max-w-6xl flex-grow px-4 py-10 sm:px-6 md:py-12"
+  >
     {/* Latest Updates 区域 */}
     <section class="animate-fade-in-up">
-      <div class="flex justify-between items-center mb-8">
-        <h2 class="text-xl font-bold text-foreground border-l-4 border-accent pl-3">
-          Latest Updates
-        </h2>
+      <div
+        class="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between"
+      >
+        <div class="max-w-2xl">
+          <p class="text-xs font-medium text-muted-foreground uppercase">
+            Latest
+          </p>
+          <h1 class="mt-3 text-2xl font-semibold tracking-normal sm:text-3xl">
+            Latest Updates
+          </h1>
+          <p class="mt-2 text-sm leading-6 text-muted-foreground">
+            Notes, guides, and product-minded writing in one quiet feed.
+          </p>
+        </div>
         <LinkButton
           href="/posts"
-          class="text-sm font-medium text-muted-foreground hover:text-accent transition-colors flex items-center gap-1"
+          class="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline decoration-muted-foreground/30 decoration-dashed underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground"
         >
           View All <span aria-hidden="true">&rarr;</span>
         </LinkButton>
       </div>
 
       {/* 网格布局 */}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {allPosts.map(post => (
-          <Card variant="h3" {...post} />
-        ))}
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+        {allPosts.map(post => <Card variant="h3" {...post} />)}
       </div>
 
       {/* Explore All Posts 按钮 */}
       <div class="mt-12 text-center">
         <LinkButton
           href="/posts"
-          class="inline-flex items-center justify-center px-6 py-3 border border-border text-base font-medium rounded-full text-foreground bg-background hover:bg-accent/5 transition-colors"
+          class="inline-flex h-9 items-center justify-center rounded-[8px] border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
         >
           Explore All Posts
         </LinkButton>

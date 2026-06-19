@@ -18,23 +18,31 @@ const page = await getRuntimePostPage(getD1(Astro.locals), 1, SITE.postPerPage);
 <Layout title={`Posts | ${SITE.title}`}>
   <Header />
   <Breadcrumb />
-  <main id="main-content" class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 py-8">
-    <div class="mb-8">
-      <h1 class="text-2xl font-semibold sm:text-3xl">Posts</h1>
-      <p class="mt-2 text-muted-foreground italic">
+  <main
+    id="main-content"
+    class="mx-auto w-full max-w-6xl flex-grow px-4 py-10 sm:px-6 md:py-12"
+  >
+    <div class="mb-6 max-w-2xl">
+      <p class="text-xs font-medium text-muted-foreground uppercase">Archive</p>
+      <h1 class="mt-3 text-2xl font-semibold tracking-normal sm:text-3xl">
+        Posts
+      </h1>
+      <p class="mt-2 text-sm leading-6 text-muted-foreground">
         All the articles I've posted.
       </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
       {page.data.map(data => <Card variant="h3" {...data} />)}
     </div>
 
-    {page.lastPage > 1 && (
-      <div class="mt-12">
-        <Pagination {page} />
-      </div>
-    )}
+    {
+      page.lastPage > 1 && (
+        <div class="mt-12">
+          <Pagination {page} />
+        </div>
+      )
+    }
   </main>
 
   <Footer noMarginTop />

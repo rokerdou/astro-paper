@@ -5,12 +5,15 @@
 
 :root,
 html[data-theme="light"] {
-  --background: #f9fafb;
-  --foreground: #111827;
-  --accent: #0066cc;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --border: #e5e7eb;
+  --background: #fafafa;
+  --foreground: #18181b;
+  --accent: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --border: #e4e4e7;
+  --card: #ffffff;
+  --secondary: #f7f7f8;
+  --ring: #a1a1aa;
 }
 
 html[data-theme="dark"] {
@@ -20,6 +23,9 @@ html[data-theme="dark"] {
   --muted: #1e1e1e;
   --muted-foreground: #9ca3af;
   --border: #374151;
+  --card: #18181b;
+  --secondary: #27272a;
+  --ring: #52525b;
 }
 
 @theme inline {
@@ -29,6 +35,9 @@ html[data-theme="dark"] {
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-card: var(--card);
+  --color-secondary: var(--secondary);
+  --color-ring: var(--ring);
 }
 
 @layer base {
@@ -43,6 +52,7 @@ html[data-theme="dark"] {
   body {
     @apply flex min-h-svh flex-col bg-background font-sans text-foreground selection:bg-accent/75 selection:text-background;
     padding-top: 64px; /* Fixed header height */
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   /* =========================================
@@ -174,7 +184,7 @@ html[data-theme="dark"] {
 }
 
 .active-nav {
-  @apply underline decoration-wavy decoration-2 underline-offset-4;
+  @apply rounded-[8px] bg-muted px-2 py-1 text-foreground no-underline;
 }
 
 /* Source: https://piccalil.li/blog/a-more-modern-css-reset/ */
@@ -209,7 +219,7 @@ html[data-theme="dark"] {
 
 /* 文章图片样式 - 限制最大高度为视口高度的 2/3 */
 .app-prose img {
-  @apply mx-auto rounded border border-border;
+  @apply mx-auto rounded-[10px] border border-border;
   max-height: 66vh;
   width: auto;
   object-fit: contain;
