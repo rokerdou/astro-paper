@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useTags } from "./hooks";
 import { vars, input, card, btnPrimary, spinnerStyle } from "./styles";
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 60_000 } },
+});
 
 const responsiveCss = `
 @media (max-width: 640px) {
@@ -20,12 +22,19 @@ function TagManagerInner() {
 
   if (isLoading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}>
-        <div style={{
-          width: "1.5rem", height: "1.5rem", border: "2px solid var(--border)",
-          borderTopColor: "var(--accent)", borderRadius: "50%",
-          animation: "admin-spin 0.6s linear infinite",
-        }} />
+      <div
+        style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}
+      >
+        <div
+          style={{
+            width: "1.5rem",
+            height: "1.5rem",
+            border: "2px solid var(--border)",
+            borderTopColor: "var(--accent)",
+            borderRadius: "50%",
+            animation: "admin-spin 0.6s linear infinite",
+          }}
+        />
         <style>{spinnerStyle}</style>
       </div>
     );
@@ -43,7 +52,7 @@ function TagManagerInner() {
         body: JSON.stringify({ name }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as { error?: string };
         setError(data.error || "Failed to create tag");
         return;
       }
@@ -63,24 +72,29 @@ function TagManagerInner() {
       <style>{responsiveCss}</style>
 
       {/* Create */}
-      <div className="tm-form" style={{
-        ...card,
-        display: "flex",
-        gap: "0.75rem",
-        marginBottom: "2rem",
-        alignItems: "flex-end",
-      }}>
+      <div
+        className="tm-form"
+        style={{
+          ...card,
+          display: "flex",
+          gap: "0.75rem",
+          marginBottom: "2rem",
+          alignItems: "flex-end",
+        }}
+      >
         <div style={{ flex: 1 }}>
-          <label style={{
-            display: "block",
-            fontSize: "0.6875rem",
-            fontWeight: 600,
-            textTransform: "uppercase" as const,
-            letterSpacing: "0.08em",
-            color: "var(--muted-foreground)",
-            marginBottom: "0.5rem",
-            fontFamily: vars.font,
-          }}>
+          <label
+            style={{
+              display: "block",
+              fontSize: "0.6875rem",
+              fontWeight: 600,
+              textTransform: "uppercase" as const,
+              letterSpacing: "0.08em",
+              color: "var(--muted-foreground)",
+              marginBottom: "0.5rem",
+              fontFamily: vars.font,
+            }}
+          >
             New Tag
           </label>
           <input
@@ -106,26 +120,31 @@ function TagManagerInner() {
       </div>
 
       {error && (
-        <div style={{
-          padding: "0.625rem 1rem",
-          marginBottom: "1rem",
-          borderRadius: "0.5rem",
-          background: "rgba(239,68,68,0.08)",
-          border: "1px solid rgba(239,68,68,0.2)",
-          color: "#ef4444",
-          fontSize: "0.8125rem",
-          fontFamily: vars.font,
-        }}>
+        <div
+          style={{
+            padding: "0.625rem 1rem",
+            marginBottom: "1rem",
+            borderRadius: "0.5rem",
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.2)",
+            color: "#ef4444",
+            fontSize: "0.8125rem",
+            fontFamily: vars.font,
+          }}
+        >
           {error}
         </div>
       )}
 
       {/* Tag grid */}
-      <div className="tm-grid" style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(9rem, 1fr))",
-        gap: "0.5rem",
-      }}>
+      <div
+        className="tm-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(9rem, 1fr))",
+          gap: "0.5rem",
+        }}
+      >
         {all.map(tag => (
           <div
             key={tag.id}
@@ -140,17 +159,26 @@ function TagManagerInner() {
               transition: "border-color 0.15s",
             }}
           >
-            <span style={{
-              width: "0.375rem", height: "0.375rem",
-              borderRadius: "50%",
-              background: "var(--accent)",
-              flexShrink: 0,
-            }} />
-            <span style={{
-              fontSize: "0.8125rem", fontWeight: 500,
-              color: "var(--foreground)", fontFamily: vars.font,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}>
+            <span
+              style={{
+                width: "0.375rem",
+                height: "0.375rem",
+                borderRadius: "50%",
+                background: "var(--accent)",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontSize: "0.8125rem",
+                fontWeight: 500,
+                color: "var(--foreground)",
+                fontFamily: vars.font,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {tag.name}
             </span>
           </div>
@@ -158,11 +186,15 @@ function TagManagerInner() {
       </div>
 
       {all.length === 0 && (
-        <div style={{
-          textAlign: "center", padding: "3rem 0",
-          color: "var(--muted-foreground)", fontSize: "0.875rem",
-          fontFamily: vars.font,
-        }}>
+        <div
+          style={{
+            textAlign: "center",
+            padding: "3rem 0",
+            color: "var(--muted-foreground)",
+            fontSize: "0.875rem",
+            fontFamily: vars.font,
+          }}
+        >
           No tags yet. Create your first tag above.
         </div>
       )}

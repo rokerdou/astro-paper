@@ -4,6 +4,7 @@ import { getD1 } from "@/utils/cloudflare";
 import { purgePublicCache } from "@/utils/cache";
 import {
   sanitizeSiteSettings,
+  validateSiteSettings,
   toSiteSettingsRecord,
 } from "@/utils/siteSettings";
 
@@ -29,7 +30,15 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const settings = sanitizeSiteSettings(body);
+  let settings;
+  try {
+    settings = validateSiteSettings(body);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Invalid settings" },
+      { status: 400 }
+    );
+  }
   await replaceSiteSettings(getD1(locals), toSiteSettingsRecord(settings));
   await purgePublicCache(request);
 

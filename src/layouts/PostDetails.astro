@@ -49,6 +49,7 @@ let ogImageUrl: string | undefined;
 if (typeof initOgImage === "string") {
   ogImageUrl = initOgImage;
 }
+if (!ogImageUrl && coverImage) ogImageUrl = coverImage;
 
 // Use dynamic OG image if enabled and no remote|local ogImage
 if (!ogImageUrl && SITE.dynamicOgImage) {
@@ -71,6 +72,7 @@ const layoutProps = {
   canonicalURL,
   ogImage,
   scrollSmooth: true,
+  structuredDataTitle: title,
 };
 
 /* ========== Prev/Next Posts ========== */
@@ -110,6 +112,8 @@ const nextPost = followingPost
                 <img
                   src={heroImage}
                   alt={title}
+                  decoding="async"
+                  fetchpriority="high"
                   class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 {/* Gradient Overlay for Text Readability */}

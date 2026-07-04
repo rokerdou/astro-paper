@@ -9,38 +9,53 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import { getRuntimePostPage } from "@/utils/runtimePosts";
 import { getD1 } from "@/utils/cloudflare";
 import { SITE } from "@/config";
+import NotFoundPage from "@/components/NotFoundPage.astro";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
-const currentPage = Number(Astro.params.page ?? "1");
+const rawPage = Astro.params.page ?? "";
+const currentPage = /^\d+$/.test(rawPage) ? Number(rawPage) : 0;
 const page = await getRuntimePostPage(
   getD1(Astro.locals),
-  Number.isFinite(currentPage) ? currentPage : 1,
+  Math.max(currentPage, 1),
   SITE.postPerPage
 );
+const isMissing = currentPage < 2 || currentPage > page.lastPage;
+if (isMissing) Astro.response.status = 404;
 ---
 
-<Layout title={`Posts | ${SITE.title}`}>
-  <Header />
-  <Breadcrumb />
-  <main id="main-content" class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 py-8">
-    <div class="mb-8">
-      <h1 class="text-2xl font-semibold sm:text-3xl">Posts</h1>
-      <p class="mt-2 text-muted-foreground italic">
-        All the articles I've posted.
-      </p>
-    </div>
+{
+  isMissing ? (
+    <NotFoundPage />
+  ) : (
+    <Layout title={`Posts | ${SITE.title}`}>
+      <Header />
+      <Breadcrumb />
+      <main
+        id="main-content"
+        class="mx-auto w-full max-w-7xl flex-grow px-4 py-8 sm:px-6"
+      >
+        <div class="mb-8">
+          <h1 class="text-2xl font-semibold sm:text-3xl">Posts</h1>
+          <p class="mt-2 text-muted-foreground italic">
+            All the articles I've posted.
+          </p>
+        </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {page.data.map(data => <Card variant="h3" {...data} />)}
-    </div>
+        <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {page.data.map(data => (
+            <Card variant="h3" {...data} />
+          ))}
+        </div>
 
-    {page.lastPage > 1 && (
-      <div class="mt-12">
-        <Pagination {page} />
-      </div>
-    )}
-  </main>
+        {page.lastPage > 1 && (
+          <div class="mt-12">
+            <Pagination {page} />
+          </div>
+        )}
+      </main>
 
-  <Footer noMarginTop />
-</Layout>
+      <Footer noMarginTop />
+    </Layout>
+  )
+}

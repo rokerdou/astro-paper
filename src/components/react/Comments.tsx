@@ -109,7 +109,7 @@ function CommentsInner({ slug }: Props) {
           body: JSON.stringify(payload),
         }
       );
-      const result = await response.json();
+      const result = (await response.json()) as { error?: string };
       if (!response.ok) {
         throw new Error(result.error || "Unable to submit comment");
       }

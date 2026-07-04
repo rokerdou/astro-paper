@@ -7,3 +7,9 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
   - workerd
+overrides:
+  js-yaml: 4.3.0
+  linkify-it: 5.0.2
+  markdown-it: 14.3.0
+  mdast-util-to-hast: 13.2.1
+  yaml: 2.9.0

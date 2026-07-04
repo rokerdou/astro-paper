@@ -79,18 +79,45 @@ function normalizeSettings(values: Record<string, string>) {
   return {
     website: valueOrDefault("website", DEFAULT_SITE_SETTINGS.website),
     title: valueOrDefault("title", DEFAULT_SITE_SETTINGS.title),
-    description: valueOrDefault("description", DEFAULT_SITE_SETTINGS.description),
+    description: valueOrDefault(
+      "description",
+      DEFAULT_SITE_SETTINGS.description
+    ),
     author: valueOrDefault("author", DEFAULT_SITE_SETTINGS.author),
     profile: valueOrDefault("profile", DEFAULT_SITE_SETTINGS.profile, true),
     ogImage: valueOrDefault("ogImage", DEFAULT_SITE_SETTINGS.ogImage, true),
     lang: valueOrDefault("lang", DEFAULT_SITE_SETTINGS.lang),
     dir: normalizeDir(valueOrDefault("dir", DEFAULT_SITE_SETTINGS.dir)),
-    themeColor: valueOrDefault("themeColor", DEFAULT_SITE_SETTINGS.themeColor, true),
-    copyright: valueOrDefault("copyright", DEFAULT_SITE_SETTINGS.copyright, true),
-    footerText: valueOrDefault("footerText", DEFAULT_SITE_SETTINGS.footerText, true),
-    githubUrl: valueOrDefault("githubUrl", DEFAULT_SITE_SETTINGS.githubUrl, true),
-    twitterUrl: valueOrDefault("twitterUrl", DEFAULT_SITE_SETTINGS.twitterUrl, true),
-    linkedinUrl: valueOrDefault("linkedinUrl", DEFAULT_SITE_SETTINGS.linkedinUrl, true),
+    themeColor: valueOrDefault(
+      "themeColor",
+      DEFAULT_SITE_SETTINGS.themeColor,
+      true
+    ),
+    copyright: valueOrDefault(
+      "copyright",
+      DEFAULT_SITE_SETTINGS.copyright,
+      true
+    ),
+    footerText: valueOrDefault(
+      "footerText",
+      DEFAULT_SITE_SETTINGS.footerText,
+      true
+    ),
+    githubUrl: valueOrDefault(
+      "githubUrl",
+      DEFAULT_SITE_SETTINGS.githubUrl,
+      true
+    ),
+    twitterUrl: valueOrDefault(
+      "twitterUrl",
+      DEFAULT_SITE_SETTINGS.twitterUrl,
+      true
+    ),
+    linkedinUrl: valueOrDefault(
+      "linkedinUrl",
+      DEFAULT_SITE_SETTINGS.linkedinUrl,
+      true
+    ),
     email: valueOrDefault("email", DEFAULT_SITE_SETTINGS.email, true),
   };
 }
@@ -121,6 +148,33 @@ export function sanitizeSiteSettings(input: Record<string, unknown>) {
   }
 
   return normalizeSettings(values);
+}
+
+export function validateSiteSettings(input: Record<string, unknown>) {
+  const settings = sanitizeSiteSettings(input);
+  const validateUrl = (value: string, field: string, allowRelative = false) => {
+    if (!value) return;
+    if (allowRelative && value.startsWith("/")) return;
+    try {
+      const url = new URL(value);
+      if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+    } catch {
+      throw new Error(`${field} must be a valid HTTP(S) URL`);
+    }
+  };
+  validateUrl(settings.website, "Website");
+  validateUrl(settings.profile, "Profile");
+  validateUrl(settings.ogImage, "OG image", true);
+  validateUrl(settings.githubUrl, "GitHub URL");
+  validateUrl(settings.twitterUrl, "Twitter URL");
+  validateUrl(settings.linkedinUrl, "LinkedIn URL");
+  if (settings.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(settings.email)) {
+    throw new Error("Email must be valid");
+  }
+  if (!/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(settings.lang)) {
+    throw new Error("Language must be a valid BCP 47 tag");
+  }
+  return settings;
 }
 
 export function toSiteSettingsRecord(settings: RuntimeSiteSettings) {

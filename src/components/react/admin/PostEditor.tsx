@@ -1,10 +1,18 @@
 import { useRef, useState, useCallback, type DragEvent } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { slugifyStr } from "@/utils/slugify";
-import { useCreatePost, useUpdatePost, type Post, type CreatePostInput, type UpdatePostInput } from "./hooks";
+import {
+  useCreatePost,
+  useUpdatePost,
+  type Post,
+  type CreatePostInput,
+  type UpdatePostInput,
+} from "./hooks";
 import { vars, input, label, card, btnPrimary, btnSecondary } from "./styles";
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 60_000 } },
+});
 
 interface UploadedAsset {
   markdown: string;
@@ -34,69 +42,84 @@ function PostEditorInner({ post }: { post?: Post }) {
   const [coverImage, setCoverImage] = useState(post?.coverImage || "");
   const [draft, setDraft] = useState(post?.draft ?? true);
   const [featured, setFeatured] = useState(post?.featured ?? false);
-  const [tagInput, setTagInput] = useState(post?.tags.map(t => t.name).join(", ") || "");
+  const [tagInput, setTagInput] = useState(
+    post?.tags.map(t => t.name).join(", ") || ""
+  );
   const [body, setBody] = useState(post?.body || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  const insertMarkdown = useCallback((markdown: string) => {
-    const textarea = textareaRef.current;
-    const start = textarea?.selectionStart ?? body.length;
-    const end = textarea?.selectionEnd ?? body.length;
-    const before = body.slice(0, start);
-    const after = body.slice(end);
-    const prefix = before && !before.endsWith("\n") ? "\n" : "";
-    const suffix = after && !after.startsWith("\n") ? "\n" : "";
-    const insertion = `${prefix}${markdown}${suffix}`;
-    const nextBody = `${before}${insertion}${after}`;
+  const insertMarkdown = useCallback(
+    (markdown: string) => {
+      const textarea = textareaRef.current;
+      const start = textarea?.selectionStart ?? body.length;
+      const end = textarea?.selectionEnd ?? body.length;
+      const before = body.slice(0, start);
+      const after = body.slice(end);
+      const prefix = before && !before.endsWith("\n") ? "\n" : "";
+      const suffix = after && !after.startsWith("\n") ? "\n" : "";
+      const insertion = `${prefix}${markdown}${suffix}`;
+      const nextBody = `${before}${insertion}${after}`;
 
-    setBody(nextBody);
-    requestAnimationFrame(() => {
-      textarea?.focus();
-      const cursor = start + insertion.length;
-      textarea?.setSelectionRange(cursor, cursor);
-    });
-  }, [body]);
-
-  const uploadFiles = useCallback(async (files: FileList | File[]) => {
-    const selectedFiles = Array.from(files);
-    if (selectedFiles.length === 0) return;
-
-    setUploading(true);
-    setError("");
-
-    try {
-      const formData = new FormData();
-      for (const file of selectedFiles) {
-        formData.append("files", file);
-      }
-
-      const response = await fetch("/api/uploads", {
-        method: "POST",
-        body: formData,
+      setBody(nextBody);
+      requestAnimationFrame(() => {
+        textarea?.focus();
+        const cursor = start + insertion.length;
+        textarea?.setSelectionRange(cursor, cursor);
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to upload files");
+    },
+    [body]
+  );
 
-      const markdown = (data.uploads as UploadedAsset[])
-        .map(upload => upload.markdown)
-        .join("\n\n");
-      insertMarkdown(markdown);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to upload files");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }, [insertMarkdown]);
+  const uploadFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const selectedFiles = Array.from(files);
+      if (selectedFiles.length === 0) return;
 
-  const handleDrop = useCallback((event: DragEvent<HTMLTextAreaElement>) => {
-    if (event.dataTransfer.files.length === 0) return;
-    event.preventDefault();
-    void uploadFiles(event.dataTransfer.files);
-  }, [uploadFiles]);
+      setUploading(true);
+      setError("");
+
+      try {
+        const formData = new FormData();
+        for (const file of selectedFiles) {
+          formData.append("files", file);
+        }
+
+        const response = await fetch("/api/uploads", {
+          method: "POST",
+          body: formData,
+        });
+        const data = (await response.json()) as {
+          error?: string;
+          uploads: UploadedAsset[];
+        };
+        if (!response.ok)
+          throw new Error(data.error || "Unable to upload files");
+
+        const markdown = (data.uploads as UploadedAsset[])
+          .map(upload => upload.markdown)
+          .join("\n\n");
+        insertMarkdown(markdown);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unable to upload files");
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [insertMarkdown]
+  );
+
+  const handleDrop = useCallback(
+    (event: DragEvent<HTMLTextAreaElement>) => {
+      if (event.dataTransfer.files.length === 0) return;
+      event.preventDefault();
+      void uploadFiles(event.dataTransfer.files);
+    },
+    [uploadFiles]
+  );
 
   const handleSave = useCallback(async () => {
     if (!title.trim()) return;
@@ -109,7 +132,10 @@ function PostEditorInner({ post }: { post?: Post }) {
     setSaved(false);
     setError("");
 
-    const tags = tagInput.split(",").map(t => t.trim()).filter(Boolean);
+    const tags = tagInput
+      .split(",")
+      .map(t => t.trim())
+      .filter(Boolean);
     const now = new Date().toISOString();
 
     const base = {
@@ -151,9 +177,24 @@ function PostEditorInner({ post }: { post?: Post }) {
     } finally {
       setSaving(false);
     }
-  }, [title, slug, description, body, tagInput, author, coverImage, draft, featured, post, isEdit, createPost, updatePost]);
+  }, [
+    title,
+    slug,
+    description,
+    body,
+    tagInput,
+    author,
+    coverImage,
+    draft,
+    featured,
+    post,
+    isEdit,
+    createPost,
+    updatePost,
+  ]);
 
-  const canSave = title.trim().length > 0 && (!isEdit || slug.trim().length > 0);
+  const canSave =
+    title.trim().length > 0 && (!isEdit || slug.trim().length > 0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -183,7 +224,10 @@ function PostEditorInner({ post }: { post?: Post }) {
       </div>
 
       {/* Metadata */}
-      <div className="pe-meta" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+      <div
+        className="pe-meta"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}
+      >
         <div style={card}>
           <label style={label}>Description</label>
           <textarea
@@ -194,27 +238,45 @@ function PostEditorInner({ post }: { post?: Post }) {
             style={{ ...input, minHeight: "4.5rem", resize: "vertical" }}
           />
         </div>
-        <div style={{ ...card, display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div
+          style={{
+            ...card,
+            display: "flex",
+            flexDirection: "column",
+            gap: "1rem",
+          }}
+        >
           <div>
             <label style={label}>Author</label>
-            <input style={input} value={author} onChange={e => setAuthor(e.target.value)} placeholder="Author name" />
+            <input
+              style={input}
+              value={author}
+              onChange={e => setAuthor(e.target.value)}
+              placeholder="Author name"
+            />
           </div>
           <div>
             <label style={label}>Post URL</label>
             <div style={{ display: "flex", alignItems: "stretch" }}>
-              <span style={{
-                ...input,
-                borderTopRightRadius: 0,
-                borderBottomRightRadius: 0,
-                borderRight: "none",
-                width: "auto",
-                color: "var(--muted-foreground)",
-                whiteSpace: "nowrap",
-              }}>
+              <span
+                style={{
+                  ...input,
+                  borderTopRightRadius: 0,
+                  borderBottomRightRadius: 0,
+                  borderRight: "none",
+                  width: "auto",
+                  color: "var(--muted-foreground)",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 /posts/
               </span>
               <input
-                style={{ ...input, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+                style={{
+                  ...input,
+                  borderTopLeftRadius: 0,
+                  borderBottomLeftRadius: 0,
+                }}
                 value={slug}
                 onChange={e => {
                   setSlug(slugifyStr(e.target.value));
@@ -244,61 +306,131 @@ function PostEditorInner({ post }: { post?: Post }) {
           </div>
           <div>
             <label style={label}>Tags</label>
-            <input style={input} value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Comma separated" />
+            <input
+              style={input}
+              value={tagInput}
+              onChange={e => setTagInput(e.target.value)}
+              placeholder="Comma separated"
+            />
           </div>
         </div>
       </div>
 
       {/* Cover image + toggles */}
-      <div className="pe-cover" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "1rem", alignItems: "start" }}>
+      <div
+        className="pe-cover"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto",
+          gap: "1rem",
+          alignItems: "start",
+        }}
+      >
         <div style={card}>
           <label style={label}>Cover Image URL</label>
-          <input style={input} value={coverImage} onChange={e => setCoverImage(e.target.value)} placeholder="https://..." />
+          <input
+            style={input}
+            value={coverImage}
+            onChange={e => setCoverImage(e.target.value)}
+            placeholder="https://..."
+          />
         </div>
-        <div style={{
-          ...card,
-          display: "flex",
-          gap: "1rem",
-          padding: "0.75rem 1.25rem",
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.8125rem" }}>
-            <input type="checkbox" checked={draft} onChange={e => setDraft(e.target.checked)} style={{ accentColor: "var(--accent)" }} />
-            <span style={{ color: draft ? "#d97706" : "var(--muted-foreground)", fontWeight: 600, fontFamily: vars.font }}>Draft</span>
+        <div
+          style={{
+            ...card,
+            display: "flex",
+            gap: "1rem",
+            padding: "0.75rem 1.25rem",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              cursor: "pointer",
+              fontSize: "0.8125rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={draft}
+              onChange={e => setDraft(e.target.checked)}
+              style={{ accentColor: "var(--accent)" }}
+            />
+            <span
+              style={{
+                color: draft ? "#d97706" : "var(--muted-foreground)",
+                fontWeight: 600,
+                fontFamily: vars.font,
+              }}
+            >
+              Draft
+            </span>
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.8125rem" }}>
-            <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} style={{ accentColor: "var(--accent)" }} />
-            <span style={{ color: featured ? "var(--accent)" : "var(--muted-foreground)", fontWeight: 600, fontFamily: vars.font }}>Featured</span>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              cursor: "pointer",
+              fontSize: "0.8125rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={featured}
+              onChange={e => setFeatured(e.target.checked)}
+              style={{ accentColor: "var(--accent)" }}
+            />
+            <span
+              style={{
+                color: featured ? "var(--accent)" : "var(--muted-foreground)",
+                fontWeight: 600,
+                fontFamily: vars.font,
+              }}
+            >
+              Featured
+            </span>
           </label>
         </div>
       </div>
 
       {/* Markdown editor */}
       <div style={{ ...card, padding: 0, overflow: "hidden" }}>
-        <div style={{
-          padding: "0.625rem 1.25rem",
-          borderBottom: "1px solid var(--border)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}>
-          <span style={{
-            fontSize: "0.6875rem",
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: "var(--muted-foreground)",
-          }}>
+        <div
+          style={{
+            padding: "0.625rem 1.25rem",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "0.6875rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "var(--muted-foreground)",
+            }}
+          >
             Markdown
           </span>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span style={{
-              fontSize: "0.6875rem",
-              color: "var(--muted-foreground)",
-              fontFamily: vars.mono,
-              whiteSpace: "nowrap",
-            }}>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+          >
+            <span
+              style={{
+                fontSize: "0.6875rem",
+                color: "var(--muted-foreground)",
+                fontFamily: vars.mono,
+                whiteSpace: "nowrap",
+              }}
+            >
               {body.length} chars
             </span>
             <input
@@ -353,20 +485,32 @@ function PostEditorInner({ post }: { post?: Post }) {
       </div>
 
       {/* Actions */}
-      <div style={{
-        display: "flex",
-        gap: "0.75rem",
-        justifyContent: "flex-end",
-        alignItems: "center",
-        flexWrap: "wrap",
-      }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.75rem",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
         {error && (
-          <span style={{ fontSize: "0.8125rem", color: "#ef4444", fontWeight: 500 }}>{error}</span>
+          <span
+            style={{ fontSize: "0.8125rem", color: "#ef4444", fontWeight: 500 }}
+          >
+            {error}
+          </span>
         )}
         {saved && (
-          <span style={{ fontSize: "0.8125rem", color: "#16a34a", fontWeight: 500 }}>Saved</span>
+          <span
+            style={{ fontSize: "0.8125rem", color: "#16a34a", fontWeight: 500 }}
+          >
+            Saved
+          </span>
         )}
-        <a href="/admin" style={btnSecondary}>Cancel</a>
+        <a href="/admin" style={btnSecondary}>
+          Cancel
+        </a>
         <button
           onClick={handleSave}
           disabled={saving || !canSave}

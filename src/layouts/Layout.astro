@@ -1,10 +1,7 @@
 ---
 import { ClientRouter } from "astro:transitions";
 import { PUBLIC_GOOGLE_SITE_VERIFICATION } from "astro:env/client";
-import {
-  getRuntimeSiteSettings,
-  resolveSiteTitle,
-} from "@/utils/siteSettings";
+import { getRuntimeSiteSettings, resolveSiteTitle } from "@/utils/siteSettings";
 import themeScript from "../../public/toggle-theme.js?raw";
 import "@/styles/global.css";
 
@@ -18,6 +15,8 @@ export interface Props {
   pubDatetime?: Date;
   modDatetime?: Date | null;
   scrollSmooth?: boolean;
+  structuredDataTitle?: string;
+  robots?: string;
 }
 
 const siteSettings = await getRuntimeSiteSettings(Astro.locals);
@@ -32,6 +31,8 @@ const {
   pubDatetime,
   modDatetime,
   scrollSmooth = false,
+  structuredDataTitle,
+  robots,
 } = Astro.props;
 
 const title = resolveSiteTitle(inputTitle, siteSettings.title);
@@ -40,7 +41,11 @@ const socialImageURL = new URL(ogImage, Astro.url);
 const structuredData = {
   "@context": "https://schema.org",
   "@type": pubDatetime ? "BlogPosting" : "WebPage",
-  headline: `${title}`,
+  ...(pubDatetime
+    ? { headline: structuredDataTitle ?? title }
+    : { name: title }),
+  description,
+  mainEntityOfPage: `${canonicalURL}`,
   image: `${socialImageURL}`,
   ...(pubDatetime && { datePublished: pubDatetime.toISOString() }),
   ...(modDatetime && { dateModified: modDatetime.toISOString() }),
@@ -72,13 +77,16 @@ const structuredData = {
     <meta name="title" content={title} />
     <meta name="description" content={description} />
     <meta name="author" content={author} />
-    <link rel="sitemap" href="/sitemap-index.xml" />
+    {robots && <meta name="robots" content={robots} />}
+    <link rel="sitemap" href="/sitemap.xml" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:image" content={socialImageURL} />
+    <meta property="og:type" content={pubDatetime ? "article" : "website"} />
+    <meta property="og:site_name" content={siteSettings.title} />
 
     <!-- Article Published/Modified time -->
     {
@@ -99,11 +107,10 @@ const structuredData = {
     }
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content={canonicalURL} />
-    <meta property="twitter:title" content={title} />
-    <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={socialImageURL} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageURL} />
 
     <!-- Google JSON-LD Structured data -->
     <script
@@ -137,7 +144,7 @@ const structuredData = {
 
     <ClientRouter />
 
-    <script is:inline set:html={themeScript}></script>
+    <script is:inline set:html={themeScript} />
   </head>
   <body>
     <slot />

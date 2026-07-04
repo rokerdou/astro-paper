@@ -19,16 +19,6 @@ const headerProps = {
   class:
     "text-base font-semibold text-foreground transition-colors line-clamp-2 leading-snug",
 };
-
-// 计算阅读时间（简单估算：每200个字1分钟）
-const calculateReadingTime = (content: string) => {
-  const wordsPerMinute = 200;
-  const words = content?.length || description?.length || 500;
-  const minutes = Math.ceil(words / wordsPerMinute);
-  return `${minutes} min`;
-};
-
-const readingTime = calculateReadingTime(description || "");
 ---
 
 <div
@@ -46,6 +36,7 @@ const readingTime = calculateReadingTime(description || "");
           alt={title}
           class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
           loading="lazy"
+          decoding="async"
         />
       ) : (
         <div class="flex h-full w-full items-center justify-center text-muted-foreground">
@@ -111,22 +102,6 @@ const readingTime = calculateReadingTime(description || "");
           ></path>
         </svg>
         <Datetime {pubDatetime} {modDatetime} {timezone} size="sm" />
-      </span>
-      <span class="flex items-center gap-1">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-3.5 w-3.5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        {readingTime}
       </span>
     </div>
   </div>

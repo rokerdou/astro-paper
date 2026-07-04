@@ -531,6 +531,24 @@ export async function searchPublishedPosts(
   const normalizedQuery = query.trim().replace(/\s+/g, " ");
   if (!normalizedQuery) return [];
 
+  if (normalizedQuery.length >= 3) {
+    const ftsQuery = `"${normalizedQuery.replace(/"/g, '""')}"`;
+    const result = await db
+      .prepare(
+        `SELECT posts.slug, posts.title, posts.description, posts.search_text
+         FROM posts_fts
+         INNER JOIN posts ON posts.id = posts_fts.rowid
+         WHERE posts_fts MATCH ?
+           AND posts.draft = 0
+           AND posts.pub_datetime <= ?
+         ORDER BY bm25(posts_fts, 6.0, 3.0, 1.0), posts.sort_datetime DESC
+         LIMIT ?`
+      )
+      .bind(ftsQuery, nowWithScheduledMargin(), limit)
+      .all<SearchPostRow>();
+    return result.results ?? [];
+  }
+
   const escapedQuery = normalizedQuery.replace(
     /[\\%_]/g,
     value => `\\${value}`
@@ -607,6 +625,72 @@ export async function createPost(db: D1Database, input: PostInput) {
       input.updatedAt
     )
     .first<PostRow>();
+}
+
+export async function createPostAndTags(
+  db: D1Database,
+  input: PostInput,
+  tagNames: string[],
+  slugify: (tag: string) => string
+) {
+  const tags: TagRow[] = [];
+  for (const tagName of tagNames) {
+    const tag = await getOrCreateTag(db, tagName, slugify(tagName));
+    if (tag) tags.push(tag);
+  }
+
+  const insert = db
+    .prepare(
+      `INSERT INTO posts (
+      slug, title, description, body, body_html, headings, search_text,
+      author, pub_datetime, mod_datetime, sort_datetime, featured, draft,
+      og_image, cover_image, canonical_url, hide_edit_post, timezone,
+      created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      input.slug,
+      input.title,
+      input.description,
+      input.body,
+      input.bodyHtml,
+      input.headings,
+      input.searchText,
+      input.author,
+      input.pubDatetime,
+      input.modDatetime,
+      input.sortDatetime,
+      boolToInt(input.featured),
+      boolToInt(input.draft),
+      input.ogImage,
+      input.coverImage,
+      input.canonicalUrl,
+      boolToInt(input.hideEditPost),
+      input.timezone,
+      input.createdAt,
+      input.updatedAt
+    );
+  const statements = [
+    insert,
+    ...tags.map(tag =>
+      db
+        .prepare(
+          `INSERT INTO posts_tags (post_id, tag_id)
+         SELECT id, ? FROM posts WHERE slug = ?`
+        )
+        .bind(tag.id, input.slug)
+    ),
+    ...tagPostCountStatements(db),
+  ];
+  await db.batch(statements);
+  return { post: await getPostBySlug(db, input.slug), tags };
+}
+
+export async function deletePostAndRefreshCounts(db: D1Database, slug: string) {
+  await db.batch([
+    db.prepare("DELETE FROM posts WHERE slug = ?").bind(slug),
+    ...tagPostCountStatements(db),
+  ]);
 }
 
 export async function updatePostBySlug(

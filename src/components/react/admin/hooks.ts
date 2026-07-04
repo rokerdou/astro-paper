@@ -48,9 +48,11 @@ export function usePosts(page = 1, pageSize = 50) {
   return useQuery({
     queryKey: ["posts", page, pageSize],
     queryFn: async () => {
-      const res = await fetch(`${BASE}/api/posts?page=${page}&pageSize=${pageSize}`);
-      const data = await res.json();
-      return data as PostsResponse;
+      const res = await fetch(
+        `${BASE}/api/posts?page=${page}&pageSize=${pageSize}`
+      );
+      const data = (await res.json()) as PostsResponse;
+      return data;
     },
   });
 }
@@ -61,14 +63,17 @@ export function usePost(slug: string | undefined) {
     queryFn: async () => {
       if (!slug) return null;
       const res = await fetch(`${BASE}/api/posts/${slug}`);
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string; post: Post };
       return data.post as Post;
     },
     enabled: !!slug,
   });
 }
 
-export type CreatePostInput = Omit<Partial<Post>, "tags"> & { title: string; tags?: string[] };
+export type CreatePostInput = Omit<Partial<Post>, "tags"> & {
+  title: string;
+  tags?: string[];
+};
 
 export function useCreatePost() {
   const qc = useQueryClient();
@@ -79,7 +84,7 @@ export function useCreatePost() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(post),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string; post: Post };
       if (!res.ok) throw new Error(data.error || "Unable to create post");
       return data as { post: Post };
     },
@@ -101,7 +106,7 @@ export function useUpdatePost() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(post),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string; post: Post };
       if (!res.ok) throw new Error(data.error || "Unable to update post");
       return data as { post: Post };
     },
@@ -119,7 +124,9 @@ export function useDeletePost() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (slug: string) => {
-      const res = await fetch(`${BASE}/api/posts/${slug}`, { method: "DELETE" });
+      const res = await fetch(`${BASE}/api/posts/${slug}`, {
+        method: "DELETE",
+      });
       return res.json();
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["posts"] }),
@@ -131,8 +138,8 @@ export function useTags() {
     queryKey: ["tags"],
     queryFn: async () => {
       const res = await fetch(`${BASE}/api/tags`);
-      const data = await res.json();
-      return data.tags as PostTag[];
+      const data = (await res.json()) as { tags: PostTag[] };
+      return data.tags;
     },
   });
 }

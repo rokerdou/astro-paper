@@ -148,6 +148,22 @@ function rehypePrism() {
   };
 }
 
+function rehypeImagePerformance() {
+  return (tree: HastNode) => {
+    function walk(node: HastNode) {
+      if (node.type === "element" && node.tagName === "img") {
+        node.properties = {
+          ...node.properties,
+          loading: node.properties?.loading ?? "lazy",
+          decoding: node.properties?.decoding ?? "async",
+        };
+      }
+      node.children?.forEach(walk);
+    }
+    walk(tree);
+  };
+}
+
 const processor = unified()
   .use(remarkParse)
   .use(remarkGfm)
@@ -157,6 +173,7 @@ const processor = unified()
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
   .use(rehypeSanitize, sanitizeSchema)
+  .use(rehypeImagePerformance)
   .use(rehypeHeadingIds)
   .use(rehypePrism)
   .use(rehypeStringify);

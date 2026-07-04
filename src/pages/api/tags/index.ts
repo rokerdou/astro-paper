@@ -1,5 +1,10 @@
 import type { APIRoute } from "astro";
-import { findTagBySlug, createTag, listTags, refreshTagPostCounts } from "@/db/d1";
+import {
+  findTagBySlug,
+  createTag,
+  listTags,
+  refreshTagPostCounts,
+} from "@/db/d1";
 import { getD1 } from "@/utils/cloudflare";
 import { purgePublicCache } from "@/utils/cache";
 import { slugifyStr } from "@/utils/slugify";
@@ -13,8 +18,22 @@ export const GET: APIRoute = async ({ locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const db = getD1(locals);
-  const body = await request.json();
-  const name = body.name;
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const name =
+    body &&
+    typeof body === "object" &&
+    "name" in body &&
+    typeof body.name === "string"
+      ? body.name.trim()
+      : "";
+  if (!name || name.length > 80) {
+    return Response.json({ error: "Tag name is required" }, { status: 400 });
+  }
   const slug = slugifyStr(name);
 
   const existing = await findTagBySlug(db, slug);

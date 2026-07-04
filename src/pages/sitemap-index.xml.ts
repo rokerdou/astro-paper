@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { getRuntimeSiteSettings } from "@/utils/siteSettings";
+import { escapeXml } from "@/utils/sitemap";
 
 export const prerender = false;
 
@@ -13,11 +14,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
   } catch {
     // Use the request origin when the saved setting is invalid.
   }
-  const body = `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n\nSitemap: ${new URL("/sitemap.xml", `${origin}/`).href}\n`;
-  return new Response(body, {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "public, max-age=0, s-maxage=300",
-    },
-  });
+  const location = escapeXml(new URL("/sitemap.xml", `${origin}/`).href);
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>${location}</loc></sitemap></sitemapindex>`,
+    { headers: { "Content-Type": "application/xml; charset=utf-8" } }
+  );
 };

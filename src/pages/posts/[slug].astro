@@ -1,11 +1,9 @@
 ---
 export const prerender = false;
 import PostDetails from "@/layouts/PostDetails.astro";
-import {
-  getRuntimeAdjacentPosts,
-  getRuntimePost,
-} from "@/utils/runtimePosts";
+import { getRuntimeAdjacentPosts, getRuntimePost } from "@/utils/runtimePosts";
 import { getD1 } from "@/utils/cloudflare";
+import NotFoundPage from "@/components/NotFoundPage.astro";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=30");
 
@@ -14,17 +12,22 @@ const db = getD1(Astro.locals);
 const post = slug ? await getRuntimePost(db, slug) : null;
 
 if (!post) {
-  if (slug && /^\d+$/.test(slug)) {
-    return Astro.redirect(`/posts/page/${slug}/`);
-  }
-  return Astro.redirect("/404");
+  Astro.response.status = 404;
 }
 
-const adjacentPosts = await getRuntimeAdjacentPosts(db, post);
+const adjacentPosts = post
+  ? await getRuntimeAdjacentPosts(db, post)
+  : { previous: null, next: null };
 ---
 
-<PostDetails
-  post={post}
-  previousPost={adjacentPosts.previous}
-  nextPost={adjacentPosts.next}
-/>
+{
+  post ? (
+    <PostDetails
+      post={post}
+      previousPost={adjacentPosts.previous}
+      nextPost={adjacentPosts.next}
+    />
+  ) : (
+    <NotFoundPage />
+  )
+}

@@ -106,9 +106,14 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       : null;
 
   if (!authorName || authorName.length > MAX_AUTHOR_LENGTH) {
-    return jsonError("Author name is required and must be shorter than 80 characters");
+    return jsonError(
+      "Author name is required and must be shorter than 80 characters"
+    );
   }
-  if (content.length < MIN_CONTENT_LENGTH || content.length > MAX_CONTENT_LENGTH) {
+  if (
+    content.length < MIN_CONTENT_LENGTH ||
+    content.length > MAX_CONTENT_LENGTH
+  ) {
     return jsonError("Comment must be between 2 and 2000 characters");
   }
 
@@ -119,8 +124,10 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     }
   }
 
-  const env = (locals as CloudflareLocals).runtime.env;
-  const hashSecret = env.COMMENT_HASH_SECRET || "astro-paper-comment-hash";
+  const hashSecret = (locals as CloudflareLocals).runtime.env.COMMENT_HASH_SECRET;
+  if (!hashSecret) {
+    return jsonError("Comment service is not configured", 503);
+  }
   const ipHash = await sha256(`${hashSecret}:${getIpAddress(request)}`);
   const userAgent = request.headers.get("User-Agent") || "";
   const userAgentHash = userAgent
