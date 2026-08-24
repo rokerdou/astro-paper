@@ -10,19 +10,63 @@ export interface Props {
   section?: string;
 }
 
-const { title = `Admin | ${SITE.title}`, activeNav = "posts", section } = Astro.props;
+const {
+  title = `Admin | ${SITE.title}`,
+  activeNav = "posts",
+  section,
+} = Astro.props;
 const siteSettings = await getRuntimeSiteSettings(Astro.locals);
 
-const sectionLabel = section || (
-  activeNav === "tags"
+const navItems = [
+  {
+    key: "posts",
+    label: "Posts",
+    href: "/admin",
+    detail: "Drafts and publishing",
+  },
+  {
+    key: "tags",
+    label: "Tags",
+    href: "/admin/tags",
+    detail: "Content taxonomy",
+  },
+  {
+    key: "comments",
+    label: "Comments",
+    href: "/admin/comments",
+    detail: "Moderation queue",
+  },
+  {
+    key: "settings",
+    label: "Settings",
+    href: "/admin/settings",
+    detail: "Site metadata",
+  },
+] as const;
+
+const sectionLabel =
+  section ||
+  (activeNav === "tags"
     ? "Tags"
     : activeNav === "comments"
       ? "Comments"
       : activeNav === "settings"
         ? "Settings"
-        : "Posts"
-);
-const pageTitle = title === `Admin | ${SITE.title}` ? `Admin | ${siteSettings.title}` : title;
+        : "Posts");
+const pageTitle =
+  title === `Admin | ${SITE.title}` ? `Admin | ${siteSettings.title}` : title;
+const sectionDescription =
+  activeNav === "tags"
+    ? "Organize topics, reuse labels, and keep tag pages tidy."
+    : activeNav === "comments"
+      ? "Review new replies before they become public."
+      : activeNav === "settings"
+        ? "Edit server-rendered site identity, SEO metadata, and footer links."
+        : section === "New Post"
+          ? "Create a searchable, SEO-ready article from Markdown."
+          : section === "Edit Post"
+            ? "Update content, metadata, tags, and publishing state."
+            : "Manage articles, drafts, publishing status, and quick edits.";
 ---
 
 <!doctype html>
@@ -32,132 +76,363 @@ const pageTitle = title === `Admin | ${SITE.title}` ? `Admin | ${siteSettings.ti
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{pageTitle}</title>
-    <script is:inline set:html={themeScript}></script>
+    <script is:inline set:html={themeScript} />
   </head>
   <body>
+    <a href="#admin-main" class="admin-skip">Skip to admin content</a>
     <div class="admin-shell">
-      <div class="admin-header">
-        <a href="/" class="admin-brand">{siteSettings.title}</a>
-        <span class="admin-sep">/</span>
-        <a href="/admin" class="admin-brand admin-brand--muted">Admin</a>
-        <span class="admin-sep">/</span>
-        <span class="admin-section">{sectionLabel}</span>
-      </div>
-
-      <nav class="admin-nav">
-        <a href="/admin" class:list={[activeNav === "posts" && "active"]}>Posts</a>
-        <a href="/admin/tags" class:list={[activeNav === "tags" && "active"]}>Tags</a>
-        <a href="/admin/comments" class:list={[activeNav === "comments" && "active"]}>Comments</a>
-        <a href="/admin/settings" class:list={[activeNav === "settings" && "active"]}>Settings</a>
-        <div class="admin-nav-right">
-          <a href="/">View Site &rarr;</a>
+      <aside class="admin-sidebar" aria-label="Admin navigation">
+        <div class="admin-brand-block">
+          <a href="/admin" class="admin-brand">{siteSettings.title}</a>
+          <span class="admin-brand-kicker">Cloudflare CMS</span>
         </div>
-      </nav>
 
-      <slot />
+        <nav class="admin-nav">
+          {
+            navItems.map(item => (
+              <a
+                href={item.href}
+                class:list={[activeNav === item.key && "active"]}
+                aria-current={activeNav === item.key ? "page" : undefined}
+              >
+                <span class="admin-nav-label">{item.label}</span>
+                <span class="admin-nav-detail">{item.detail}</span>
+              </a>
+            ))
+          }
+        </nav>
+
+        <div class="admin-sidebar-footer">
+          <a href="/" class="admin-site-link">View public site</a>
+        </div>
+      </aside>
+
+      <main id="admin-main" class="admin-main">
+        <header class="admin-topbar">
+          <div>
+            <div class="admin-breadcrumb">
+              <a href="/">Site</a>
+              <span>/</span>
+              <a href="/admin">Admin</a>
+            </div>
+            <h1>{sectionLabel}</h1>
+            <p>{sectionDescription}</p>
+          </div>
+          {
+            activeNav === "posts" && !section && (
+              <a href="/admin/posts/new" class="admin-top-action">
+                New Post
+              </a>
+            )
+          }
+        </header>
+
+        <slot />
+      </main>
     </div>
   </body>
 </html>
 
 <style is:global>
-  html, body {
+  html,
+  body {
     margin: 0;
     width: 100%;
     min-height: 100%;
-    background: var(--background);
+    background:
+      radial-gradient(
+        circle at top left,
+        rgba(59, 130, 246, 0.08),
+        transparent 28rem
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--muted) 58%, var(--background)),
+        var(--background) 22rem
+      );
     color: var(--foreground);
+  }
+
+  .admin-skip {
+    position: fixed;
+    left: 1rem;
+    top: -4rem;
+    z-index: 100;
+    border-radius: 0.5rem;
+    background: var(--foreground);
+    color: var(--background);
+    padding: 0.625rem 0.875rem;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: top 0.15s ease;
+  }
+
+  .admin-skip:focus {
+    top: 1rem;
   }
 
   .admin-shell {
     width: 100%;
-    max-width: 96rem;
+    max-width: 104rem;
     margin: 0 auto;
-    padding: 2rem 3rem 4rem;
-    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 1.25rem;
+    font-family:
+      ui-sans-serif,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
     box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 16rem minmax(0, 1fr);
+    gap: 1.25rem;
   }
 
-  .admin-header {
+  .admin-sidebar {
+    position: sticky;
+    top: 1.25rem;
+    align-self: start;
+    min-height: calc(100dvh - 2.5rem);
     display: flex;
-    align-items: baseline;
-    gap: 0.625rem;
-    margin-bottom: 0.75rem;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--background) 92%, transparent);
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+  }
+
+  .admin-brand-block {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border);
   }
 
   .admin-brand {
-    font-size: 1.25rem;
-    font-weight: 700;
+    display: block;
     color: var(--foreground);
     text-decoration: none;
-    letter-spacing: -0.02em;
-    transition: color 0.15s;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
   }
 
-  .admin-brand:hover {
-    color: var(--accent);
-  }
-
-  .admin-brand--muted {
+  .admin-brand-kicker {
+    display: block;
+    margin-top: 0.375rem;
     color: var(--muted-foreground);
-  }
-
-  .admin-sep {
-    color: var(--border);
-    font-weight: 300;
-    user-select: none;
-  }
-
-  .admin-section {
-    color: var(--accent);
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-size: 0.75rem;
+    font-weight: 600;
   }
 
   .admin-nav {
     display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 2rem;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.75rem;
   }
 
   .admin-nav a {
-    padding: 0.625rem 1rem;
+    display: block;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.875rem;
     color: var(--muted-foreground);
     text-decoration: none;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: color 0.15s, border-color 0.15s;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
   }
 
   .admin-nav a:hover {
     color: var(--foreground);
+    border-color: var(--border);
+    background: var(--muted);
   }
 
   .admin-nav a.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
+    color: var(--foreground);
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+    background: color-mix(in srgb, var(--accent) 10%, var(--background));
   }
 
-  .admin-nav-right {
-    margin-left: auto;
+  .admin-nav-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 750;
   }
 
-  .admin-nav-right a {
+  .admin-nav-detail {
+    display: block;
+    margin-top: 0.125rem;
     font-size: 0.6875rem;
-    text-transform: none;
+    line-height: 1.35;
+    color: var(--muted-foreground);
+  }
+
+  .admin-sidebar-footer {
+    margin-top: auto;
+    padding: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .admin-site-link {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    color: var(--muted-foreground);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .admin-site-link:hover {
+    color: var(--foreground);
+    border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+    background: var(--muted);
+  }
+
+  .admin-main {
+    min-width: 0;
+    padding-bottom: 3rem;
+  }
+
+  .admin-topbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 7.25rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--background) 90%, transparent);
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+    padding: 1.25rem 1.5rem;
+  }
+
+  .admin-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .admin-breadcrumb a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .admin-breadcrumb a:hover {
+    color: var(--foreground);
+  }
+
+  .admin-topbar h1 {
+    margin: 0.5rem 0 0;
+    color: var(--foreground);
+    font-size: clamp(1.5rem, 2.2vw, 2.25rem);
+    line-height: 1.1;
+    font-weight: 850;
     letter-spacing: 0;
-    font-weight: 500;
+  }
+
+  .admin-topbar p {
+    max-width: 42rem;
+    margin: 0.5rem 0 0;
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+
+  .admin-top-action {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background: var(--accent);
+    color: #fff;
+    padding: 0 1rem;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 800;
+    white-space: nowrap;
+    transition: opacity 0.15s ease;
+  }
+
+  .admin-top-action:hover {
+    opacity: 0.88;
+  }
+
+  @media (max-width: 900px) {
+    .admin-shell {
+      display: block;
+      padding: 0.875rem;
+    }
+
+    .admin-sidebar {
+      position: static;
+      min-height: 0;
+      margin-bottom: 0.875rem;
+    }
+
+    .admin-brand-block {
+      padding: 1rem;
+    }
+
+    .admin-nav {
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 0.625rem;
+    }
+
+    .admin-nav a {
+      min-width: 9.5rem;
+    }
+
+    .admin-sidebar-footer {
+      display: none;
+    }
+
+    .admin-topbar {
+      min-height: 0;
+      align-items: flex-start;
+      padding: 1rem;
+    }
   }
 
   @media (max-width: 640px) {
-    .admin-shell { padding: 1rem 1rem 3rem; }
-    .admin-header { gap: 0.375rem; }
-    .admin-brand, .admin-section { font-size: 1rem; }
-    .admin-nav a { padding: 0.5rem 0.75rem; }
+    .admin-shell {
+      padding: 0.625rem;
+    }
+
+    .admin-nav {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow: visible;
+    }
+
+    .admin-nav a {
+      min-width: 0;
+    }
+
+    .admin-topbar {
+      flex-direction: column;
+    }
+
+    .admin-top-action {
+      width: 100%;
+    }
   }
 </style>

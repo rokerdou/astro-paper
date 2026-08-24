@@ -5,9 +5,10 @@ export const vars = {
 
 export const input: React.CSSProperties = {
   width: "100%",
-  padding: "0.5rem 0.75rem",
+  minHeight: "2.75rem",
+  padding: "0.625rem 0.75rem",
   border: "1px solid var(--border)",
-  borderRadius: "0.5rem",
+  borderRadius: "0.625rem",
   background: "var(--background)",
   color: "var(--foreground)",
   fontSize: "0.875rem",
@@ -31,9 +32,10 @@ export const label: React.CSSProperties = {
 export const card: React.CSSProperties = {
   background: "var(--background)",
   border: "1px solid var(--border)",
-  borderRadius: "0.75rem",
+  borderRadius: "0.875rem",
   padding: "1.25rem",
-  transition: "box-shadow 0.2s, border-color 0.2s",
+  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.04)",
+  transition: "box-shadow 0.2s, border-color 0.2s, background 0.2s",
 };
 
 export const btnPrimary: React.CSSProperties = {
@@ -41,9 +43,10 @@ export const btnPrimary: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   gap: "0.375rem",
+  minHeight: "2.75rem",
   padding: "0.5rem 1.25rem",
   border: "none",
-  borderRadius: "0.5rem",
+  borderRadius: "0.625rem",
   background: "var(--accent)",
   color: "#fff",
   fontSize: "0.8125rem",
@@ -59,9 +62,10 @@ export const btnSecondary: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   gap: "0.375rem",
+  minHeight: "2.75rem",
   padding: "0.5rem 1rem",
   border: "1px solid var(--border)",
-  borderRadius: "0.5rem",
+  borderRadius: "0.625rem",
   background: "transparent",
   color: "var(--foreground)",
   fontSize: "0.8125rem",
@@ -77,6 +81,7 @@ export const btnDanger: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  minHeight: "2.5rem",
   padding: "0.375rem 0.75rem",
   border: "1px solid transparent",
   borderRadius: "0.375rem",
@@ -89,7 +94,9 @@ export const btnDanger: React.CSSProperties = {
   fontFamily: vars.font,
 };
 
-export const badge = (type: "draft" | "published" | "featured"): React.CSSProperties => {
+export const badge = (
+  type: "draft" | "published" | "featured"
+): React.CSSProperties => {
   const map: Record<string, React.CSSProperties> = {
     draft: {
       padding: "0.125rem 0.5rem",
