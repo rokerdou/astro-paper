@@ -11,12 +11,14 @@ const responsiveCss = `
 @media (max-width: 640px) {
   .tm-form { flex-direction: column !important; align-items: stretch !important; }
   .tm-grid { grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)) !important; }
+  .tm-summary { grid-template-columns: 1fr !important; }
 }
 `;
 
 function TagManagerInner() {
   const { data: tags, isLoading } = useTags();
   const [newTag, setNewTag] = useState("");
+  const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
@@ -66,10 +68,62 @@ function TagManagerInner() {
   };
 
   const all = tags || [];
+  const filtered = all.filter(tag =>
+    tag.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
+  const usedCount = all.filter(tag => (tag.postCount ?? 0) > 0).length;
 
   return (
     <div>
       <style>{responsiveCss}</style>
+
+      <div
+        className="tm-summary"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: "0.75rem",
+          marginBottom: "1rem",
+        }}
+      >
+        {[
+          ["Tags", all.length],
+          ["In use", usedCount],
+          ["Nested", all.filter(tag => tag.name.includes("/")).length],
+        ].map(([name, value]) => (
+          <div
+            key={String(name)}
+            style={{
+              ...card,
+              padding: "0.875rem 1rem",
+            }}
+          >
+            <div
+              style={{
+                color: "var(--muted-foreground)",
+                fontFamily: vars.font,
+                fontSize: "0.6875rem",
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              {name}
+            </div>
+            <div
+              style={{
+                marginTop: "0.25rem",
+                color: "var(--foreground)",
+                fontFamily: vars.font,
+                fontSize: "1.25rem",
+                fontWeight: 700,
+              }}
+            >
+              {value}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Create */}
       <div
@@ -119,6 +173,15 @@ function TagManagerInner() {
         </button>
       </div>
 
+      <div style={{ marginBottom: "1rem" }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search tags..."
+          style={input}
+        />
+      </div>
+
       {error && (
         <div
           style={{
@@ -145,7 +208,7 @@ function TagManagerInner() {
           gap: "0.5rem",
         }}
       >
-        {all.map(tag => (
+        {filtered.map(tag => (
           <div
             key={tag.id}
             style={{
@@ -154,9 +217,10 @@ function TagManagerInner() {
               border: "1px solid var(--border)",
               borderRadius: "0.5rem",
               display: "flex",
-              alignItems: "center",
+              alignItems: "flex-start",
               gap: "0.5rem",
               transition: "border-color 0.15s",
+              minWidth: 0,
             }}
           >
             <span
@@ -166,21 +230,36 @@ function TagManagerInner() {
                 borderRadius: "50%",
                 background: "var(--accent)",
                 flexShrink: 0,
+                marginTop: "0.45rem",
               }}
             />
-            <span
-              style={{
-                fontSize: "0.8125rem",
-                fontWeight: 500,
-                color: "var(--foreground)",
-                fontFamily: vars.font,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {tag.name}
-            </span>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div
+                style={{
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  color: "var(--foreground)",
+                  fontFamily: vars.font,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+                title={tag.name}
+              >
+                {tag.name}
+              </div>
+              <div
+                style={{
+                  marginTop: "0.125rem",
+                  fontSize: "0.6875rem",
+                  color: "var(--muted-foreground)",
+                  fontFamily: vars.font,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {tag.postCount ?? 0} posts
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -196,6 +275,19 @@ function TagManagerInner() {
           }}
         >
           No tags yet. Create your first tag above.
+        </div>
+      )}
+      {all.length > 0 && filtered.length === 0 && (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "3rem 0",
+            color: "var(--muted-foreground)",
+            fontSize: "0.875rem",
+            fontFamily: vars.font,
+          }}
+        >
+          No tags match your search.
         </div>
       )}
     </div>

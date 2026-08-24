@@ -248,10 +248,22 @@ npx wrangler pages deploy dist --project-name astro-paper
 - `Post URL` 字段控制文章公开 URL：`/posts/{slug}/`
 - 新文章 URL 可以留空，系统会根据标题自动生成。
 - 修改文章 URL 后，会清理旧 URL 和新 URL 的公开缓存。
+- 文章标签使用 chip 输入，支持已有标签自动补全、Enter 添加、Backspace 删除。
+- 标签名可以使用 `/` 表达层级，例如 `project/backend`；当前公开 URL 仍沿用既有 slug 规则，避免影响 SEO 链接。
+
+标签管理：
+
+- 入口：`/admin/tags`
+- 支持搜索标签、查看标签总数、已使用标签数、层级标签数。
+- 标签列表显示每个标签关联的文章数量，数据来自 `tag_post_counts` 物化计数表。
 
 上传文件：
 
+- Markdown 编辑器提供 H2、代码块、链接快捷插入按钮。
+- 支持 `Cmd+S` / `Ctrl+S` 保存文章。
+- 编辑器会显示字数、字符数、预计阅读时间和上传状态。
 - 在 Markdown 编辑器中点击 `Upload` 选择文件。
+- 或将截图/图片复制后，在 Markdown 文本框中直接粘贴上传。
 - 或将图片/文件直接拖拽到 Markdown 文本框。
 - 图片会插入为：`![filename](/uploads/...)`
 - 文件会插入为：`[filename](/uploads/...)`

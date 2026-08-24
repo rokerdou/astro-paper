@@ -299,8 +299,13 @@ export async function getPostStats(db: D1Database) {
 
 export async function listTags(db: D1Database) {
   const result = await db
-    .prepare("SELECT * FROM tags ORDER BY name ASC")
-    .all<TagRow>();
+    .prepare(
+      `SELECT tags.id, tags.name, tags.slug, COALESCE(tag_post_counts.post_count, 0) AS post_count
+       FROM tags
+       LEFT JOIN tag_post_counts ON tag_post_counts.tag_id = tags.id
+       ORDER BY tags.name ASC`
+    )
+    .all<TopTagRow>();
   return result.results ?? [];
 }
 

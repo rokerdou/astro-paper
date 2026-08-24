@@ -13,7 +13,14 @@ export const prerender = false;
 
 export const GET: APIRoute = async ({ locals }) => {
   const tags = await listTags(getD1(locals));
-  return Response.json({ tags });
+  return Response.json({
+    tags: tags.map(tag => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      postCount: tag.post_count ?? 0,
+    })),
+  });
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -38,12 +45,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const existing = await findTagBySlug(db, slug);
   if (existing) {
-    return Response.json({ tag: existing });
+    const tags = await listTags(db);
+    const existingWithCount = tags.find(tag => tag.slug === existing.slug);
+    return Response.json({
+      tag: {
+        ...existing,
+        postCount: existingWithCount?.post_count ?? 0,
+      },
+    });
   }
 
   const tag = await createTag(db, name, slug);
   await refreshTagPostCounts(db);
   await purgePublicCache(request, [`/tags/${slug}/`]);
 
-  return Response.json({ tag }, { status: 201 });
+  return Response.json({ tag: { ...tag, postCount: 0 } }, { status: 201 });
 };

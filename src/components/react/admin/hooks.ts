@@ -6,6 +6,7 @@ export interface PostTag {
   id: number;
   name: string;
   slug: string;
+  postCount?: number;
 }
 
 export interface Post {
